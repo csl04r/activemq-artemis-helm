@@ -6,3 +6,21 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "artemis.fullname" . }}-tokenreview
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: amq
+{{/*rules:*/}}
+{{/*  - apiGroups: ["authentication.k8s.io"]*/}}
+{{/*    resources: ["tokenreviews"]*/}}
+{{/*    verbs: ["create"]*/}}

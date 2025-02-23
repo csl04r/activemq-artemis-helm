@@ -1,243 +1,397 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "artemis.fullname" . }}
+  name: {{ include "artemis.fullname" . }}-override
   labels:
 {{ include "artemis.labels" . | indent 4 }}
 data:
   broker.xml: |
-    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-    <configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd" xmlns:xi="http://www.w3.org/2001/XInclude">
-      <core xmlns="urn:activemq:core" xsi:schemaLocation="urn:activemq:core ">
+    {{- include "artemis.broker.xml" . | nindent 6 }}
 
-        <xi:include href="../etc-override/connectors.xml"/>
-
-        <xi:include href="../etc-override/addresses.xml"/>
-        <xi:include href="../etc-override/address-settings.xml" />
-
-        <cluster-user>{{ .Values.auth.clusterUser }}</cluster-user>
-        <xi:include href="../etc-override/clustering.xml" />
-
-        <xi:include href="../etc-override/broadcast.xml"/>
-        <xi:include href="../etc-override/discovery.xml"/>
-
-        {{- range $key, $value := .Values.core }}
-        <{{ kebabcase $key }}>{{ $value }}</{{ kebabcase $key }}>
-        {{- end }}
-      </core>
-    </configuration>
-
-  broker-ha-live.xml: |
-    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-    <configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd" xmlns:xi="http://www.w3.org/2001/XInclude">
-      <core xmlns="urn:activemq:core" xsi:schemaLocation="urn:activemq:core ">
-
-        <xi:include href="../etc-override/connectors.xml"/>
-
-        <cluster-user>{{ .Values.auth.clusterUser }}</cluster-user>
-        <xi:include href="../etc-override/clustering.xml" />
-
-        <xi:include href="../etc-override/broadcast.xml"/>
-        <xi:include href="../etc-override/discovery.xml"/>
-
-        <xi:include href="../etc-override/addresses.xml"/>
-        <xi:include href="../etc-override/address-settings.xml" />
-
-        <xi:include href="../etc-override/ha-live.xml" />
-
-        {{- range $key, $value := .Values.core }}
-        <{{ kebabcase $key }}>{{ $value }}</{{ kebabcase $key }}>
-        {{- end }}
-      </core>
-    </configuration>
-
-  broker-ha-backup.xml: |
-    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-    <configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd" xmlns:xi="http://www.w3.org/2001/XInclude">
-      <core xmlns="urn:activemq:core" xsi:schemaLocation="urn:activemq:core ">
-
-        <xi:include href="../etc-override/connectors.xml"/>
-
-        <cluster-user>{{ .Values.auth.clusterUser }}</cluster-user>
-        <xi:include href="../etc-override/clustering.xml" />
-
-        <xi:include href="../etc-override/broadcast.xml"/>
-        <xi:include href="../etc-override/discovery.xml"/>
-
-        <xi:include href="../etc-override/addresses.xml"/>
-        <xi:include href="../etc-override/address-settings.xml" />
-
-        <xi:include href="../etc-override/ha-backup.xml" />
-
-        {{- range $key, $value := .Values.core }}
-        <{{ kebabcase $key }}>{{ $value }}</{{ kebabcase $key }}>
-        {{- end }}
-      </core>
-    </configuration>
-
-  connectors.xml: |
-    <connectors xmlns="urn:activemq:core">
-      <connector name="netty">tcp://$EXTERNAL_IP:61616</connector>
-    </connectors>
-
-  clustering.xml: |
-    <cluster-connections xmlns="urn:activemq:core">
-      <cluster-connection name="{{ include "artemis.fullname" . }}">
-        <address>{{ .Values.clustering.addresses | join "," }}</address>
-        <connector-ref>netty</connector-ref>
-        {{- range $key, $value := (omit .Values.clustering "address" "addresses" "connector-ref" "discovery-group-ref") }}
-        <{{ kebabcase $key }}>{{ $value }}</{{ kebabcase $key }}>
-        {{- end }}
-        <discovery-group-ref discovery-group-name="jgroups-discovery" />
-      </cluster-connection>
-    </cluster-connections>
-
-  broadcast.xml: |
-    <broadcast-groups xmlns="urn:activemq:core">
-      <broadcast-group name="jgroups-broadcast">
-        <jgroups-file>jgroups/jgroups-discovery.xml</jgroups-file>
-        <jgroups-channel>activemq_broadcast_channel</jgroups-channel>
-        <connector-ref>netty</connector-ref>
-      </broadcast-group>
-    </broadcast-groups>
-
-  discovery.xml: |
-    <discovery-groups  xmlns="urn:activemq:core" >
-      <discovery-group name="jgroups-discovery">
-          <jgroups-file>jgroups/jgroups-discovery.xml</jgroups-file>
-          <jgroups-channel>activemq_broadcast_channel</jgroups-channel>
-          <refresh-timeout>10000</refresh-timeout>
-      </discovery-group>
-    </discovery-groups>
-
-  jgroups-discovery.xml: |
-    <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="urn:org:jgroups"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
-
-      <TCP
-        external_addr="match-interface:eth0"
-        bind_addr="match-interface:eth0"
-        bind_port="7800"
-        thread_pool.min_threads="{{ .Values.replicaCount }}"
-        {{- range $key, $value := .Values.jgroups.tcp }}
-        {{ $key }}={{ $value | quote }}
-        {{- end }}
-      />
-
-      <org.jgroups.protocols.kubernetes.KUBE_PING
-        masterProtocol="https"
-        namespace="{{ .Release.Namespace }}"
-        labels="app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/name={{ include "artemis.name" . }}"
-        {{- range $key, $value := .Values.jgroups.k8s }}
-        {{ $key }}={{ $value | quote }}
-        {{- end }}
-      />
-
-      <MERGE3 max_interval="30000" min_interval="10000"/>
-      <FD_SOCK start_port="9000"/>
-      <FD_ALL timeout="30000" interval="5000"/>
-      <VERIFY_SUSPECT timeout="1500"/>
-      <BARRIER />
-      <pbcast.NAKACK2
-        xmit_interval="500"
-        xmit_table_num_rows="100"
-        xmit_table_msgs_per_row="2000"
-        xmit_table_max_compaction_time="30000"
-        use_mcast_xmit="false"
-        discard_delivered_msgs="true" />
-      <UNICAST3
-        xmit_table_num_rows="100"
-        xmit_table_msgs_per_row="1000"
-        xmit_table_max_compaction_time="30000"/>
-      <pbcast.STABLE
-        stability_delay="1000"
-        desired_avg_gossip="50000"
-        max_bytes="8m"/>
-      <pbcast.GMS print_local_addr="true" join_timeout="3000"/>
-      <MFC max_credits="2M" min_threshold="0.4"/>
-      <FRAG2 frag_size="60K"/>
-      <pbcast.STATE_TRANSFER/>
-      <CENTRAL_LOCK />
-      <COUNTER/>
-    </config>
-
-  addresses.xml: |
-    <addresses xmlns="urn:activemq:core">
-    {{- range .Values.addresses }}
-      <address name="{{ required "name is mandatory for each address" .name }}">
-      {{- if eq "queue" (default "queue" .type) }}
-        <anycast>
-        {{- if .queues }}
-            {{- range .queues }}
-              <queue name="{{ . }}" />
-            {{- end }}
-        {{- else }}
-            <queue name="{{ .name }}" />
-        {{- end }}
-        </anycast>
-      {{- else if eq "topic" .type }}
-        {{- if .queues }}
-        <multicast>
-          {{- range .queues }}
-             <queue name="{{ . }}" />
-          {{- end }}
-        </multicast>
-        {{- else }}
-        <multicast />
-        {{- end }}
-      {{- else }}
-        {{- fail "invald address type. Can only be 'queue' or 'topic'"}}
-      {{- end }}
-      </address>
+  login.config2: |
+    activemq {
+       org.apache.activemq.artemis.spi.core.security.jaas.PropertiesLoginModule required
+           debug=true
+           reload=true
+           org.apache.activemq.jaas.properties.user="artemis-users.properties"
+           org.apache.activemq.jaas.properties.role="artemis-roles.properties";
+       org.apache.activemq.artemis.spi.core.security.jaas.KubernetesLoginModule required
+           debug=false
+           reload=true;
+    };
+  login.config: |
+    activemq {
+       org.apache.activemq.artemis.spi.core.security.jaas.KubernetesLoginModule required
+           debug=true
+           reload=true
+           org.apache.activemq.jaas.kubernetes.role="k8s-roles.properties";
+    };
+  k8s-roles.properties: |
+    amq=system:authenticated,system:serviceaccount:default:chad-amq-client
+    {{- range  $ix, $entry := .Values.clients }}
+    {{ $entry.name }}={{ $entry.fullyQualifiedServiceAccountName }}
     {{- end }}
-    </addresses>
+  log4j2.properties: |
+    # Licensed to the Apache Software Foundation (ASF) under one or more
+    # contributor license agreements.  See the NOTICE file distributed with
+    # this work for additional information regarding copyright ownership.
+    # The ASF licenses this file to You under the Apache License, Version 2.0
+    # (the "License"); you may not use this file except in compliance with
+    # the License.  You may obtain a copy of the License at
+    #
+    # http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
 
-  address-settings.xml: |
-    <address-settings xmlns="urn:activemq:core">
-    {{- range .Values.addressSettings }}
-       <address-setting match="{{ required "match is mandatory for each addressSetting" .match }}">
-       {{- range $key, $value := .settings }}
-        <{{ kebabcase $key }}>{{ $value }}</{{ kebabcase $key }}>
-       {{- end }}
-       </address-setting>
-    {{- end }}
-    </address-settings>
+    # Log4J 2 configuration
 
-  ha-live.xml: |
-    <ha-policy xmlns="urn:activemq:core">
-      <replication>
-          <master>
-            <check-for-live-server>true</check-for-live-server>
-            {{- range $key, $value := (omit .Values.ha.live "check-for-live-server" "checkForLiveServer") }}
-            <{{ kebabcase $key }}>{{ $value }}</{{ kebabcase $key }}>
-            {{- end }}
-          </master>
-      </replication>
-    </ha-policy>
+    # Monitor config file every X seconds for updates
+    monitorInterval = 5
 
-  ha-backup.xml: |
-    <ha-policy xmlns="urn:activemq:core">
-      <replication>
-          <slave>
-            <allow-failback>true</allow-failback>
-            {{- range $key, $value := (omit .Values.ha.backup "allow-failback" "allowFailback") }}
-            <{{ kebabcase $key }}>{{ $value }}</{{ kebabcase $key }}>
-            {{- end }}
-          </slave>
-      </replication>
-    </ha-policy>
+    rootLogger.level = DEBUG
+    rootLogger.appenderRef.console.ref = console
+    rootLogger.appenderRef.log_file.ref = log_file
 
-  broker-00.xslt: |
-    <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    logger.activemq.name=org.apache.activemq
+    logger.activemq.level=INFO
 
-      <xsl:output omit-xml-declaration="yes"/>
+    logger.security.name=org.apache.activemq.artemis.spi.core.security.jaas
+    logger.security.level=DEBUG
 
-      <xsl:template match="node()|@*">
-        <xsl:copy>
-         <xsl:apply-templates select="node()|@*"/>
-        </xsl:copy>
-      </xsl:template>
+    logger.artemis_server.name=org.apache.activemq.artemis.core.server
+    logger.artemis_server.level=INFO
 
-      <xsl:template match="*[local-name()='addresses']|*[local-name()='address-settings']"/>
-    </xsl:stylesheet>
+    logger.artemis_journal.name=org.apache.activemq.artemis.journal
+    logger.artemis_journal.level=INFO
+
+    logger.artemis_utils.name=org.apache.activemq.artemis.utils
+    logger.artemis_utils.level=INFO
+
+    # CriticalAnalyzer: If you have issues with the CriticalAnalyzer, setting this to TRACE would give
+    # you extra troubleshooting info, but do not use TRACE regularly as it would incur extra CPU usage.
+    logger.critical_analyzer.name=org.apache.activemq.artemis.utils.critical
+    logger.critical_analyzer.level=INFO
+
+    # Audit loggers: to enable change levels from OFF to INFO
+    logger.audit_base.name = org.apache.activemq.audit.base
+    logger.audit_base.level = OFF
+    logger.audit_base.appenderRef.audit_log_file.ref = audit_log_file
+    logger.audit_base.additivity = false
+
+    logger.audit_resource.name = org.apache.activemq.audit.resource
+    logger.audit_resource.level = OFF
+    logger.audit_resource.appenderRef.audit_log_file.ref = audit_log_file
+    logger.audit_resource.additivity = false
+
+    logger.audit_message.name = org.apache.activemq.audit.message
+    logger.audit_message.level = OFF
+    logger.audit_message.appenderRef.audit_log_file.ref = audit_log_file
+    logger.audit_message.additivity = false
+
+    # Jetty logger levels
+    logger.jetty.name=org.eclipse.jetty
+    logger.jetty.level=WARN
+
+    # web console authenticator too verbose for impatient client
+    logger.authentication_filter.name=io.hawt.web.auth.AuthenticationFilter
+    logger.authentication_filter.level=ERROR
+
+    # Quorum related logger levels
+    logger.curator.name=org.apache.curator
+    logger.curator.level=WARN
+    logger.zookeeper.name=org.apache.zookeeper
+    logger.zookeeper.level=ERROR
+
+
+    # Console appender
+    appender.console.type=Console
+    appender.console.name=console
+    appender.console.layout.type=PatternLayout
+    appender.console.layout.pattern=%d %-5level [%logger] %msg%n
+
+    # Log file appender
+    appender.log_file.type = RollingFile
+    appender.log_file.name = log_file
+    appender.log_file.fileName = ${sys:artemis.instance}/log/artemis.log
+    appender.log_file.filePattern = ${sys:artemis.instance}/log/artemis.log.%d{yyyy-MM-dd}
+    appender.log_file.layout.type = PatternLayout
+    appender.log_file.layout.pattern = %d %-5level [%logger] %msg%n
+    appender.log_file.policies.type = Policies
+    appender.log_file.policies.cron.type = CronTriggeringPolicy
+    appender.log_file.policies.cron.schedule = 0 0 0 * * ?
+    appender.log_file.policies.cron.evaluateOnStartup = true
+
+    # Audit log file appender
+    appender.audit_log_file.type = RollingFile
+    appender.audit_log_file.name = audit_log_file
+    appender.audit_log_file.fileName = ${sys:artemis.instance}/log/audit.log
+    appender.audit_log_file.filePattern = ${sys:artemis.instance}/log/audit.log.%d{yyyy-MM-dd}
+    appender.audit_log_file.layout.type = PatternLayout
+    appender.audit_log_file.layout.pattern = %d [AUDIT](%t) %msg%n
+    appender.audit_log_file.policies.type = Policies
+    appender.audit_log_file.policies.cron.type = CronTriggeringPolicy
+    appender.audit_log_file.policies.cron.schedule = 0 0 0 * * ?
+    appender.audit_log_file.policies.cron.evaluateOnStartup = true
+
+  management.xml: |
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+      ~ Licensed to the Apache Software Foundation (ASF) under one or more
+      ~ contributor license agreements. See the NOTICE file distributed with
+      ~ this work for additional information regarding copyright ownership.
+      ~ The ASF licenses this file to You under the Apache License, Version 2.0
+      ~ (the "License"); you may not use this file except in compliance with
+      ~ the License. You may obtain a copy of the License at
+      ~
+      ~     http://www.apache.org/licenses/LICENSE-2.0
+      ~
+      ~ Unless required by applicable law or agreed to in writing, software
+      ~ distributed under the License is distributed on an "AS IS" BASIS,
+      ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      ~ See the License for the specific language governing permissions and
+      ~ limitations under the License.
+      -->
+    <management-context xmlns="http://activemq.apache.org/schema">
+        <!--<connector connector-port="1099"/>-->
+        <authorisation>
+            <allowlist>
+                <entry domain="hawtio"/>
+            </allowlist>
+            <default-access>
+                <!--
+                The "default-access" settings apply to every MBean not explicitly configured
+                in the "allowlist" or "role-access" sections
+                -->
+
+                <!-- allow read-only access by default -->
+                <access method="list*" roles="amq"/>
+                <access method="get*" roles="amq"/>
+                <access method="is*" roles="amq"/>
+
+                <!-- don't allow write or other operations by default -->
+                <!--access method="set*" roles="amq"/-->
+                <!--access method="*" roles="amq"/-->
+            </default-access>
+            <role-access>
+                <match domain="org.apache.activemq.artemis">
+                    <access method="list*" roles="amq"/>
+                    <access method="get*" roles="amq"/>
+                    <access method="is*" roles="amq"/>
+                    <access method="set*" roles="amq"/>
+                    <!-- Note count and browse are need to access the browse tab in the console -->
+                    <access method="browse*" roles="amq"/>
+                    <access method="count*" roles="amq"/>
+                    <access method="*" roles="amq"/>
+                </match>
+                <!--example of how to configure a specific object -->
+                <!--
+                <match domain="org.apache.activemq.artemis" key="subcomponent=queues">
+                   <access method="list*" roles="view,update,amq"/>
+                   <access method="get*" roles="view,update,amq"/>
+                   <access method="is*" roles="view,update,amq"/>
+                   <access method="set*" roles="update,amq"/>
+                   <access method="*" roles="amq"/>
+                </match>
+                -->
+            </role-access>
+        </authorisation>
+    </management-context>
+
+  log4j2-utility.properties: |
+    # Licensed to the Apache Software Foundation (ASF) under one or more
+    # contributor license agreements.  See the NOTICE file distributed with
+    # this work for additional information regarding copyright ownership.
+    # The ASF licenses this file to You under the Apache License, Version 2.0
+    # (the "License"); you may not use this file except in compliance with
+    # the License.  You may obtain a copy of the License at
+    #
+    # http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
+    # Log4J 2 configuration
+    # Monitor config file every X seconds for updates
+    monitorInterval=5
+    rootLogger.level=WARN
+    rootLogger.appenderRef.console.ref=console
+    # Console appender
+    appender.console.type=Console
+    appender.console.name=console
+    appender.console.layout.type=PatternLayout
+    appender.console.layout.pattern=%d %-5level [%logger] %msg%n
+  jolokia-access.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+    -->
+
+    <!-- This policy file controls the Jolokia JMX-HTTP bridge security options for the web console.
+       see: https://jolokia.org/reference/html/security.html -->
+    <restrict>
+        <cors>
+            <!-- Allow cross-origin access from the origins that match the following pattern ... -->
+            <allow-origin>*://0.0.0.0*</allow-origin>
+            <!-- Options from this point on are auto-generated by Create.java from the Artemis CLI -->
+            <!-- option relax-jolokia used, so strict-checking will be removed here -->
+        </cors>
+    </restrict>
+  bootstrap.xml: |
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+      ~ Licensed to the Apache Software Foundation (ASF) under one or more
+      ~ contributor license agreements. See the NOTICE file distributed with
+      ~ this work for additional information regarding copyright ownership.
+      ~ The ASF licenses this file to You under the Apache License, Version 2.0
+      ~ (the "License"); you may not use this file except in compliance with
+      ~ the License. You may obtain a copy of the License at
+      ~
+      ~     http://www.apache.org/licenses/LICENSE-2.0
+      ~
+      ~ Unless required by applicable law or agreed to in writing, software
+      ~ distributed under the License is distributed on an "AS IS" BASIS,
+      ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      ~ See the License for the specific language governing permissions and
+      ~ limitations under the License.
+      -->
+
+    <broker xmlns="http://activemq.apache.org/schema">
+        <jaas-security domain="activemq"/>
+        <!-- artemis.URI.instance is parsed from artemis.instance by the CLI startup.
+             This is to avoid situations where you could have spaces or special characters on this URI -->
+        <server configuration="file:/var/lib/artemis-instance/./etc//broker.xml"/>
+        <!-- The web server is only bound to localhost by default -->
+        <web path="web" rootRedirectLocation="console">
+            <binding name="artemis" uri="http://0.0.0.0:8161">
+                <app name="branding" url="activemq-branding" war="activemq-branding.war"/>
+                <app name="plugin" url="artemis-plugin" war="artemis-plugin.war"/>
+                <app name="console" url="console" war="console.war"/>
+            </binding>
+        </web>
+    </broker>
+  artemis.profile: |
+    # Licensed to the Apache Software Foundation (ASF) under one
+    # or more contributor license agreements.  See the NOTICE file
+    # distributed with this work for additional information
+    # regarding copyright ownership.  The ASF licenses this file
+    # to you under the Apache License, Version 2.0 (the
+    # "License"); you may not use this file except in compliance
+    # with the License.  You may obtain a copy of the License at
+    #
+    #   http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing,
+    # software distributed under the License is distributed on an
+    # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    # KIND, either express or implied.  See the License for the
+    # specific language governing permissions and limitations
+    # under the License.
+
+    ARTEMIS_HOME='/opt/activemq-artemis'
+    ARTEMIS_INSTANCE='/var/lib/artemis-instance'
+    ARTEMIS_DATA_DIR='/var/lib/artemis-instance/data'
+    ARTEMIS_ETC_DIR='/var/lib/artemis-instance/etc'
+    ARTEMIS_OOME_DUMP='/var/lib/artemis-instance/log/oom_dump.hprof'
+
+    # The logging config will need an URI
+    # this will be encoded in case you use spaces or special characters
+    # on your directory structure
+    ARTEMIS_INSTANCE_URI='file:/var/lib/artemis-instance/./'
+    ARTEMIS_INSTANCE_ETC_URI='file:/var/lib/artemis-instance/./etc/'
+
+    # Cluster Properties: Used to pass arguments to ActiveMQ Artemis which can be referenced in broker.xml
+    #ARTEMIS_CLUSTER_PROPS="-Dactivemq.remoting.default.port=61617 -Dactivemq.remoting.amqp.port=5673 -Dactivemq.remoting.stomp.port=61614 -Dactivemq.remoting.hornetq.port=5446"
+
+    # Hawtio Properties
+    # HAWTIO_ROLE define the user role or roles required to be able to login to the console. Multiple roles to allow can
+    # be separated by a comma. Set to '*' or an empty value to disable role checking when Hawtio authenticates a user.
+    HAWTIO_ROLE='amq'
+
+    # Java Opts
+    if [ -z "$JAVA_ARGS" ]; then
+        JAVA_ARGS="-XX:AutoBoxCacheMax=20000 -XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512M -Xmx2G -Dhawtio.disableProxy=true -Dhawtio.realm=activemq -Dhawtio.offline=true -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload -Djolokia.policyLocation=${ARTEMIS_INSTANCE_ETC_URI}jolokia-access.xml -Dlog4j2.disableJmx=true --add-opens java.base/jdk.internal.misc=ALL-UNNAMED "
+    fi
+
+    # Uncomment to enable logging for Safepoint JVM pauses
+    #
+    # In addition to the traditional GC logs you could enable some JVM flags to know any meaningful and "hidden" pause
+    # that could affect the latencies of the services delivered by the broker, including those that are not reported by
+    # the classic GC logs and dependent by JVM background work (eg method deoptimizations, lock unbiasing, JNI, counted
+    # loops and obviously GC activity).
+    #
+    # Replace "all_pauses.log" with the file name you want to log to.
+    # JAVA_ARGS="$JAVA_ARGS -XX:+PrintSafepointStatistics -XX:PrintSafepointStatisticsCount=1 -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+LogVMOutput -XX:LogFile=all_pauses.log"
+
+    # Uncomment to enable the dumping of the Java heap when a java.lang.OutOfMemoryError exception is thrown
+    # JAVA_ARGS="$JAVA_ARGS -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${ARTEMIS_OOME_DUMP}"
+
+    # Only enable debug options for the 'run' command
+    if [ "$1" = "run" ]; then :
+        # Uncomment to enable remote debugging
+        # DEBUG_ARGS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
+
+        # Uncomment for async profiler
+        # DEBUG_ARGS="-XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints"
+    fi
+  artemis-utility.profile: |
+    # Licensed to the Apache Software Foundation (ASF) under one
+    # or more contributor license agreements.  See the NOTICE file
+    # distributed with this work for additional information
+    # regarding copyright ownership.  The ASF licenses this file
+    # to you under the Apache License, Version 2.0 (the
+    # "License"); you may not use this file except in compliance
+    # with the License.  You may obtain a copy of the License at
+    #
+    #   http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing,
+    # software distributed under the License is distributed on an
+    # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    # KIND, either express or implied.  See the License for the
+    # specific language governing permissions and limitations
+    # under the License.
+
+    ARTEMIS_HOME='/opt/activemq-artemis'
+    ARTEMIS_INSTANCE='/var/lib/artemis-instance'
+    ARTEMIS_DATA_DIR='/var/lib/artemis-instance/data'
+    ARTEMIS_ETC_DIR='/var/lib/artemis-instance/etc'
+    ARTEMIS_OOME_DUMP='/var/lib/artemis-instance/log/oom_dump.hprof'
+
+    # The logging config will need an URI
+    # this will be encoded in case you use spaces or special characters
+    # on your directory structure
+    ARTEMIS_INSTANCE_URI='file:/var/lib/artemis-instance/./'
+    ARTEMIS_INSTANCE_ETC_URI='file:/var/lib/artemis-instance/./etc/'
+
+    if [ -z "$LOGGING_ARGS" ]; then
+        LOGGING_ARGS="-Dlog4j2.configurationFile=${ARTEMIS_INSTANCE_ETC_URI}log4j2-utility.properties"
+    fi
+
+    if [ -z "$JAVA_ARGS" ]; then
+        JAVA_ARGS="-Dlog4j2.disableJmx=true --add-opens java.base/jdk.internal.misc=ALL-UNNAMED "
+    fi
+
+    # Uncomment to enable remote debugging
+    # DEBUG_ARGS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
+

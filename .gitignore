@@ -7,3 +7,7 @@
 maven-wrapper.jar
 
 target/
+
+*.tgz
+index.yaml
+delme*

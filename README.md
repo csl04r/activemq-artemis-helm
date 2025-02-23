@@ -1,8 +1,7 @@
 This chart installs [Apache ActiveMQ Artemis](https://activemq.apache.org/components/artemis/)
 
 ## Docker image
-This chart no longer uses [vromero/activemq-artemis](https://github.com/vromero/activemq-artemis-docker) docker image.
-Please fork [vromero/activemq-artemis](https://github.com/vromero/activemq-artemis-docker) repository and create your own image in order to use this helm chart.
+This chart uses the apache/activemq-artemis image.
 
 ## Usage
 
