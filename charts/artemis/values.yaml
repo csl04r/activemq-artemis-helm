@@ -12,18 +12,18 @@ initContainerImage:
   tag: 5
   pullPolicy: IfNotPresent
 
+javaArgs: "-Xms512m -Xmx512m -XX:+UseG1GC"
+# Rule of thumb for memory calculation: 1.3 * max_heap + 128Mi
 resources:
   limits:
-    memory: 256Mi
+    memory: 794Mi # round(1.3 * 512Mi) + 128Mi
   requests:
     cpu: 100m
-    memory: 256Mi
+    memory: 794Mi
 
-# javaArgs additional java options
-javaArgs: ""
 
 persistence:
-  enabled: false
+  enabled: true
   accessModes:
     - ReadWriteOnce
   storageSize: 8Gi
@@ -143,9 +143,37 @@ tolerations: []
 
 affinity: {}
 
-clients:
-  - name: shercolor
-    fullyQualifiedServiceAccountName: system:serviceaccount:shw-na-pos:shercolor
-  - name: pol
-    fullyQualifiedServiceAccountName: system:serviceaccount:shw-na-pos:pol
-
+security:
+  kubernetes:
+    ## security.kubernetes.enabled if `true` use kubernetes service account token authentication and authorization
+    enabled: true
+    clients: []
+      ## security.kubernetes.clients[].name a known applications that will connect from the K8s cluster, used to create an AMQ role and destination prefix
+#     - name: OURAPP
+        ## security.kubernetes.clients[].fullyQualifiedServiceAccountName the fully qualified service account name to acquire this AMQ role
+#       fullyQualifiedServiceAccountName: system:serviceaccount:our-ns:our-app
+    ## security.kubernetes.roleAliases maps ActiveMQ roles to a list of k8s principals
+    roleAliases: {}
+#     amq: # the activemq role to assign
+#       ## security.kubernetes.roleAliases.amq[] list of k8s prinicpals to get the `amq` role
+#       - system:serviceaccount:shw-na-pos:pol # list of k8s principals to receive the role
+#       - system:serviceaccount:shw-na-pos:shercolor
+  oauth2:
+    ## security.oauth2.enabled if `true` use OAuth2 JWT token authentication and authorization
+    enabled: true
+    ## security.oauth2.jaasModule LoginModule implementation class
+    jaasModule: shw.activemq.extension.security.OAuth2LoginModule
+    ## security.oauth2.tenantId In Microsoft Entra, the tenant ID in use
+    tenantId: 44b79a67-d972-49ba-9167-8eb05f754a1a
+    ## security.oauth2.audience audience in JWT which identifies this group of ActiveMQ services
+    audience: 8bddbe55-946d-4033-8832-a1e752e97709
+    ## security.oauth2.issuerUrl the URL of the OAuth2 issuer
+    issuerUrl: https://login.microsoftonline.com/44b79a67-d972-49ba-9167-8eb05f754a1a/v2.0
+    ## security.oauth2.rolesClaimName name of claim in the JWT containing roles to add to the authenticated subject
+    rolesClaimName: roles
+    # security.oauth2.roleAliases maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role.
+    roleAliases: {}
+#       amq: # the ActiveMQ role to assign to the JWT role
+#         ## security.oauth2.roleAliases.amq[] list of elements in the roles claim to get the `amq` ActiveMQ role
+#         - CCN.BANKCARD.INFO # the JWT role to assign to the ActiveMQ role
+#         - CCN.STORE.INFO

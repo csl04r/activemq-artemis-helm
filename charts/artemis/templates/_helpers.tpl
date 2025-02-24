@@ -90,6 +90,13 @@ initContainers:
   command:
     - bash
     - /tmp/scripts/setup-broker.sh
+  env:
+    - name: ARTEMIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ include "artemis.secretname" . }}
+          key: clientPassword
+
   volumeMounts:
     - name: scripts
       mountPath: /tmp/scripts
@@ -457,7 +464,9 @@ under the License.
             <!-- we need this otherwise ./artemis data imp wouldn't work -->
             <permission type="manage" roles="amq,system:authenticated,global"/>
          </security-setting>
-         {{- range  $ix, $entry := .Values.clients }}
+         {{- with ((.Values.security).kubernetes) }}
+         {{- if .enabled }}
+         {{- range  $ix, $entry := .clients }}
          <security-setting match="{{ $entry.name }}.#">
             <permission type="createNonDurableQueue" roles="amq,{{ $entry.name  }}"/>
             <permission type="deleteNonDurableQueue" roles="amq,{{ $entry.name  }}"/>
@@ -470,6 +479,8 @@ under the License.
             <permission type="send" roles="amq,{{ $entry.name  }}"/>
             <permission type="manage" roles="amq,{{ $entry.name  }}"/>
          </security-setting>
+         {{- end }}
+         {{- end }}
          {{- end }}
       </security-settings>
 
@@ -548,4 +559,40 @@ under the License.
 
    </core>
 </configuration>
+{{- end -}}
+
+{{- define "artemis.login.config" -}}
+activemq {
+   org.apache.activemq.artemis.spi.core.security.jaas.PropertiesLoginModule sufficient
+       debug=true
+       reload=true
+       org.apache.activemq.jaas.properties.user="artemis-users.properties"
+       org.apache.activemq.jaas.properties.role="artemis-roles.properties";
+   {{- with (.Values.security).oauth2 }}
+   {{- if .enabled }}
+   {{.jaasModule }} sufficient
+       debug=true
+       audience="{{ required "audience is required" .audience }}"
+       rolesClaimName="{{ .rolesClaimName | default "roles" }}"
+       {{- if .tenantId }}
+       tenantId="{{.tenantId}}"
+       {{- end }}
+       issuerUrl="{{ required "issuerUrl is required" .issuerUrl }}"
+       reload=true
+       shw.activemq.extension.security.oauth2.role="oauth2-role-aliases.properties";
+       {{- end }}
+   {{- end }}
+   {{- with (.Values.security).kubernetes }}
+   {{- if .enabled }}
+   org.apache.activemq.artemis.spi.core.security.jaas.KubernetesLoginModule sufficient
+       debug=true
+       reload=true
+       org.apache.activemq.jaas.kubernetes.role="k8s-roles.properties";
+       {{- end }}
+       {{- end }}
+};
+{{- end -}}
+
+{{- define "artemis.oauth2.rolealiases" -}}
+
 {{- end -}}

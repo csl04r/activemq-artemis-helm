@@ -8,29 +8,16 @@ data:
   broker.xml: |
     {{- include "artemis.broker.xml" . | nindent 6 }}
 
-  login.config2: |
+  login.config.p: |
     activemq {
        org.apache.activemq.artemis.spi.core.security.jaas.PropertiesLoginModule required
            debug=true
            reload=true
            org.apache.activemq.jaas.properties.user="artemis-users.properties"
            org.apache.activemq.jaas.properties.role="artemis-roles.properties";
-       org.apache.activemq.artemis.spi.core.security.jaas.KubernetesLoginModule required
-           debug=false
-           reload=true;
     };
   login.config: |
-    activemq {
-       org.apache.activemq.artemis.spi.core.security.jaas.KubernetesLoginModule required
-           debug=true
-           reload=true
-           org.apache.activemq.jaas.kubernetes.role="k8s-roles.properties";
-    };
-  k8s-roles.properties: |
-    amq=system:authenticated,system:serviceaccount:default:chad-amq-client
-    {{- range  $ix, $entry := .Values.clients }}
-    {{ $entry.name }}={{ $entry.fullyQualifiedServiceAccountName }}
-    {{- end }}
+    {{- include "artemis.login.config" . | nindent 6 }}
   log4j2.properties: |
     # Licensed to the Apache Software Foundation (ASF) under one or more
     # contributor license agreements.  See the NOTICE file distributed with
@@ -111,7 +98,7 @@ data:
     appender.console.type=Console
     appender.console.name=console
     appender.console.layout.type=PatternLayout
-    appender.console.layout.pattern=%d %-5level [%logger] %msg%n
+    appender.console.layout.pattern=%-5level [%logger] %msg%n
 
     # Log file appender
     appender.log_file.type = RollingFile
@@ -395,3 +382,22 @@ data:
     # Uncomment to enable remote debugging
     # DEBUG_ARGS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
 
+
+  {{- with (.Values.security).oauth2 }}
+    {{- if .enabled }}
+  oauth2-role-aliases.properties: |
+    {{- range $k, $v := .roleAliases }}
+    {{ $k }}={{ join "," $v }}
+    {{- end }}
+  {{- end }}
+ {{- end }}
+ {{- with (.Values.security).kubernetes }}
+    {{- if .enabled }}
+  k8s-roles.properties: |
+  {{- range  $ix, $entry := .clients }}
+    {{ $entry.name }}={{ $entry.fullyQualifiedServiceAccountName }}
+  {{- end }}
+  {{- range $k, $v := .roleAliases }}
+    {{ $k }}={{ join "," $v }}{{- end }}
+  {{- end }}
+{{- end }}
