@@ -1,46 +1,140 @@
+replicaCount: 1
+
 image:
-  repository: some/image
-  tag: 2.17.0
+## repository and image tag are required
+#  repository: some/image
+#  tag: 2.17.0
+  pullPolicy: IfNotPresent
+  pullSecrets: []
 
-users:
-  artemisTestUser:
-    user: testUser1
-    secretName: test-secret
-    secretKey: test-user
-  artemisTestUser2:
-    user: testUser2
-    secretName: test-secret
-    secretKey: artemis-user
-  artemisTestUser3:
-    user: testUserNoRoles
-    secretName: test-secret
-    secretKey: no-roles
+javaArgs: >-
+  -XX:AutoBoxCacheMax=20000 
+  -XX:+PrintClassHistogram 
+  -XX:+UseG1GC 
+  -XX:+UseStringDeduplication 
+  -Xms512M 
+  -Xmx512M 
+  -Dhawtio.disableProxy=true 
+  -Dhawtio.realm=activemq 
+  -Dhawtio.offline=true 
+  -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal 
+  -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload 
+  -Djolokia.policyLocation=/var/lib/artemis-instance/etc/jolokia-access.xml 
+  -Dlog4j2.disableJmx=true 
+  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
 
-roleBindings:
-  - role: amq
-    users:
-      - testUser2
-  - role: artemisRole1
-    users:
-      - testUser1
-      - testUser2
+# Rule of thumb for memory calculation: 1.3 * max_heap + 128Mi
+resources:
+  limits:
+    memory: 794Mi # round(1.3 * 512Mi) + 128Mi
+  requests:
+    cpu: 100m
+    memory: 794Mi
 
-addresses:
-  - name: testAnycast
-  - name: testAnycastWQueues
-    queues:
-      - TestQ1A
-      - TestQ2A
-  - name: "testMulticast"
-    type: "topic"
-  - name: "testMulticastQueues"
-    type: "topic"
-    queues:
-      - TestQ1M
-      - TestQ2M
-      - TestQ3M
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  storageSize: 8Gi
+
+# livenessProbe:
+  # httpGet:
+  #   port: http
+  # initialDelaySeconds: 120
+  # periodSeconds: 10
+
+readinessProbe:
+  tcpSocket:
+    port: netty
+  initialDelaySeconds: 5
+  periodSeconds: 10
 
 metrics:
+  ## metrics.enabled if `true` export prometheus metrics
   enabled: true
   serviceMonitor:
+    ## metrics.serviceMonitor.enabled if `true` and metrics.enabled `true` then deploy service monitor
+    enabled: false
+    ## metrics.serviceMonitor.namespace namespace where serviceMonitor is deployed
+    namespace: monitoring
+    ## metrics.serviceMonitor.path Prometheus scraping path
+    path: /metrics
+    ## metrics.serviceMonitor.interval Prometheus scraping interval
+    interval: 10s
+
+## core additional core settings. Key, values are automatically expanded
+core:
+  ## core.criticalAnalyzerPolicy how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html
+  criticalAnalyzerPolicy: SHUTDOWN
+
+addresses:
+  - name: DLQ
+  - name: ExpiryQueue
+
+addressSettings:
+  - match: "#"
+    settings:
+      deadLetterAddress: DLQ
+      expiryAddress: ExpiryQueue
+      messageCounterHistoryDayLimit: 10
+tls:
+  enabled: true
+  parameters:
+    sslEnabled: "true"
+    keyStorePath: /var/lib/artemis-instance/tls/server-keystore.p12
+    keyStorePassword: securepass
+    keyStoreType: PKCS12
+    keyStoreAlias: server
+    trustStorePath: /var/lib/artemis-instance/tls/server-ca-truststore.p12
+    trustStorePassword: securepass
+    trustStoreType: PKCS12
+debugger:
+  enabled: false
+  port: 8000
+
+
+## podSecurityContext allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+# podSecurityContext:
+## containerSecurityContext allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+# containerSecurityContext:
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+security:
+  kubernetes:
+    ## security.kubernetes.enabled if `true` use kubernetes service account token authentication and authorization
     enabled: true
+    clients: []
+      ## security.kubernetes.clients[].name a known applications that will connect from the K8s cluster, used to create an AMQ role and destination prefix
+#     - name: OURAPP
+        ## security.kubernetes.clients[].fullyQualifiedServiceAccountName the fully qualified service account name to acquire this AMQ role
+#       fullyQualifiedServiceAccountName: system:serviceaccount:our-ns:our-app
+    ## security.kubernetes.roleAliases maps ActiveMQ roles to a list of k8s principals
+    roleAliases: {}
+#     amq: # the activemq role to assign
+#       ## security.kubernetes.roleAliases.amq[] list of k8s prinicpals to get the `amq` role
+#       - system:serviceaccount:shw-na-pos:pol # list of k8s principals to receive the role
+#       - system:serviceaccount:shw-na-pos:shercolor
+  oauth2:
+    ## security.oauth2.enabled if `true` use OAuth2 JWT token authentication and authorization
+    enabled: true
+    ## security.oauth2.jaasModule LoginModule implementation class
+    jaasModule: shw.activemq.extension.security.OAuth2LoginModule
+    ## security.oauth2.tenantId In Microsoft Entra, the tenant ID in use
+    tenantId: 44b79a67-d972-49ba-9167-8eb05f754a1a
+    ## security.oauth2.audience audience in JWT which identifies this group of ActiveMQ services
+    audience: 8bddbe55-946d-4033-8832-a1e752e97709
+    ## security.oauth2.issuerUrl the URL of the OAuth2 issuer
+    issuerUrl: https://login.microsoftonline.com/44b79a67-d972-49ba-9167-8eb05f754a1a/v2.0
+    ## security.oauth2.rolesClaimName name of claim in the JWT containing roles to add to the authenticated subject
+    rolesClaimName: roles
+    # security.oauth2.roleAliases maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role.
+    roleAliases: {}
+#       amq: # the ActiveMQ role to assign to the JWT role
+#         ## security.oauth2.roleAliases.amq[] list of elements in the roles claim to get the `amq` ActiveMQ role
+#         - CCN.BANKCARD.INFO # the JWT role to assign to the ActiveMQ role
+#         - CCN.STORE.INFO

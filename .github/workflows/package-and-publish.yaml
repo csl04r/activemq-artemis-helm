@@ -1,0 +1,34 @@
+on:
+  release:
+    types: [ published ]
+
+name: Build and Publish
+
+jobs:
+  build_helm:
+    runs-on: sw-ubuntu-latest
+    name: Builds Helm chart and uploads to Artifactory
+    steps:
+      - name: Get release version string
+        id: version_str
+        run: |
+          REF_VERSION=${GITHUB_REF_NAME#v}
+          echo "ref_version=$REF_VERSION" >> "$GITHUB_OUTPUT"
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+      - name: Build Helm chart
+        env:
+          CHART_VERSION: ${{ steps.version_str.outputs.ref_version }}
+        run: |
+          helm lint ./charts/artemis -f ./test/values.yaml
+          helm package ./charts/artemis --version $CHART_VERSION
+        shell: bash
+      - name: Publish to Artifactory
+        env:
+          ARTIF_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIF_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
+          ARTIF_FILE: activemq-artemis-${{ steps.version_str.outputs.ref_version }}.tgz
+          ARTIF_DIR: https://artifactory.sherwin.com/artifactory/helm-local/activemq-artemis/
+        run: |
+          curl -f -u $ARTIF_USERNAME:$ARTIF_API_KEY -T $ARTIF_FILE $ARTIF_DIR$ARTIF_FILE
+        shell: bash

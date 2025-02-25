@@ -28,7 +28,7 @@ If release name contains chart name it will be used as a full name.
 Create a secret name based on the configuration, if it is auto-generated or preexisting
 */}}
 {{- define "artemis.secretname" -}}
-{{- if .Values.auth.existingSecret -}}
+{{- if (.Values.auth).existingSecret -}}
 {{- .Values.auth.existingSecret -}}
 {{- else -}}
 {{- include "artemis.fullname" . }}
@@ -58,7 +58,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 
 {{- define "artemis.labels.live" -}}
 {{ include "artemis.labels" . }}
-{{- if .Values.ha.enabled }}
+{{- if (.Values.ha).enabled }}
 app.kubernetes.io/ha: live
 {{- end }}
 {{- end -}}
@@ -158,7 +158,7 @@ containers:
     - name: JAVA_ARGS
       value: "{{ .Values.javaArgs }}"
     - name: ARTEMIS_USERNAME
-      value: {{ .Values.auth.clientUser }}
+      value: {{ (.Values.auth).clientUser | default "artemis" | quote }}
     - name: ARTEMIS_PASSWORD
       valueFrom:
         secretKeyRef:
