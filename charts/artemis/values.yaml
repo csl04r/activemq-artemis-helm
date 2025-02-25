@@ -7,12 +7,22 @@ image:
   pullPolicy: IfNotPresent
   pullSecrets: []
 
-initContainerImage:
-  repository: bash
-  tag: 5
-  pullPolicy: IfNotPresent
+javaArgs: >-
+  -XX:AutoBoxCacheMax=20000 
+  -XX:+PrintClassHistogram 
+  -XX:+UseG1GC 
+  -XX:+UseStringDeduplication 
+  -Xms512M 
+  -Xmx512M 
+  -Dhawtio.disableProxy=true 
+  -Dhawtio.realm=activemq 
+  -Dhawtio.offline=true 
+  -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal 
+  -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload 
+  -Djolokia.policyLocation=/var/lib/artemis-instance/etc/jolokia-access.xml 
+  -Dlog4j2.disableJmx=true 
+  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
 
-javaArgs: "-Xms512m -Xmx512m -XX:+UseG1GC"
 # Rule of thumb for memory calculation: 1.3 * max_heap + 128Mi
 resources:
   limits:
@@ -20,7 +30,6 @@ resources:
   requests:
     cpu: 100m
     memory: 794Mi
-
 
 persistence:
   enabled: true
@@ -53,32 +62,6 @@ metrics:
     ## metrics.serviceMonitor.interval Prometheus scraping interval
     interval: 10s
 
-auth:
-  clientUser: artemis
-  clusterUser: artemis-internal
-
-jgroups:
-  # jgroups.k8s additional settings for the k8s ping of jgroups. Key, Values are automatically expanded.
-  k8s: {}
-  # jgroups.tcp additional settings for the k8s ping of jgroups. Key, Values are automatically expanded.
-  tcp: {}
-
-## clustering settings, see: https://activemq.apache.org/components/artemis/documentation/latest/clusters.html for reference.
-## All key-value pairs are automatically expanded in the cluster-connections xml
-clustering:
-  ## clustering.addresses prefix of addresses to include in clustering
-  addresses: []
-  ## clustering.useDuplicateDetection filter out duplicate messages
-  useDuplicateDetection: true
-
-ha:
-  ## ha.enabled if `true` a second stateful set running backups will be installed
-  enabled: false
-  ## ha.live settings for live servers. Key, values are automatically expanded
-  live: {}
-  ## ha.backup settings for backup servers. Key, values are automatically expanded
-  backup: {}
-
 ## core additional core settings. Key, values are automatically expanded
 core:
   ## core.criticalAnalyzerPolicy how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html
@@ -109,28 +92,6 @@ debugger:
   enabled: false
   port: 8000
 
-## users defines the Artemis users required by other applications.
-# users:
-#    johndoe:
-#      user: johndoe
-#      secretName: artemis-secret
-#      secretKey: johndoe
-#    testUser:
-#      user: testUser
-#      secretName: test-secret
-#      secretKey: test
-
-## user-role bindings required by other applications.
-# roleBindings:
-#   - role: amq
-#     users:
-#     - johndoe
-#   - role: artemisRole1
-#     users:
-#     - johndoe
-#     - testUser
-
-users: {}
 
 ## podSecurityContext allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
 # podSecurityContext:

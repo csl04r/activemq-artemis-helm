@@ -21,13 +21,6 @@ releases:
      - image:
          repository: docker.artifactory.sherwin.com/merchant-services/activemq-artemis
          tag: "0.0.4"
-     - javaArgs: "-Xms512m -Xmx512m -XX:+UseG1GC"
-     - resources:
-         limits:
-           # 1.3 * max_heap + 128M
-           memory: 794Mi
-         requests:
-           memory: 794Mi
      - persistence:
          enabled: true
          storageClass: longhorn
