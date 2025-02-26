@@ -2,13 +2,13 @@
 replicaCount: 1
 
 image:
-# -- required value to identify the image
+  # -- required value to identify the image
   repository: docker.artifactory.sherwin.com/sherwin-williams-co/activemq-shw-extensions
 
   # -- required value to identify the image
   tag: ""
   pullPolicy: IfNotPresent
-  pullSecrets: []
+  pullSecrets: [ ]
 
 # -- JVM arguments to include on the artemis server command line
 javaArgs: >-
@@ -46,7 +46,7 @@ persistence:
   # -- used to build the PVC for teh stateful set
   storageClassName: "longhorn"
 
-# livenessProbe:
+  # livenessProbe:
   # httpGet:
   #   port: http
   # initialDelaySeconds: 120
@@ -124,13 +124,27 @@ debugger:
 # -- allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
 # podSecurityContext:
 # -- allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
-# containerSecurityContext:
+containerSecurityContext:
+  # -- if `true` run the container as a non-root user
+  runAsNonRoot: true
+  # -- the user id to use when running the container
+  runAsUser: 1001
+  # -- the group id to use when running the container
+  runAsGroup: 1001
+  # -- group id of mounted volumes (must match runAsGroup for this to work)
+  fsGroup: 1001
 
-nodeSelector: {}
+nodeSelector: { }
 
-tolerations: []
+tolerations: [ ]
 
-affinity: {}
+affinity: { }
+
+service:
+  loadBalancer:
+    annotations:
+      metallb.universe.tf/allow-shared-ip: "172.30.0.8"
+      metallb.universe.tf/ip-allocated-from-pool: default-pool
 
 security:
   # -- security configuration for clients running in the same Kubernetes cluster
@@ -164,8 +178,8 @@ security:
     rolesClaimName: roles
     # -- maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role.
     roleAliases:
-        # -- the ActiveMQ role to assign to the subject presenting the JWT
-        some-amq-role:
-          # -- elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role
-          - CCN.BANKCARD.INFO
-          - CCN.STORE.INFO
+      # -- the ActiveMQ role to assign to the subject presenting the JWT
+      some-amq-role:
+        # -- elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role
+        - CCN.BANKCARD.INFO
+        - CCN.STORE.INFO

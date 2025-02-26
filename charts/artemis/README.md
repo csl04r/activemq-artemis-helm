@@ -24,6 +24,11 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | addressSettings[0].settings.messageCounterHistoryDayLimit | int | `10` | configures the address settings, see the artemis docs for details |
 | addresses | list | `[{"name":"DLQ"},{"name":"ExpiryQueue"}]` | list of named address (JMS destinations) to pre-populate in the broker |
 | affinity | object | `{}` |  |
+| containerSecurityContext | object | `{"fsGroup":1001,"runAsGroup":1001,"runAsNonRoot":true,"runAsUser":1001}` | allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
+| containerSecurityContext.fsGroup | int | `1001` | group id of mounted volumes (must match runAsGroup for this to work) |
+| containerSecurityContext.runAsGroup | int | `1001` | the group id to use when running the container |
+| containerSecurityContext.runAsNonRoot | bool | `true` | if `true` run the container as a non-root user |
+| containerSecurityContext.runAsUser | int | `1001` | the user id to use when running the container |
 | core | object | `{"criticalAnalyzerPolicy":"SHUTDOWN"}` | additional core settings. Key, values are automatically expanded |
 | core.criticalAnalyzerPolicy | string | `"SHUTDOWN"` | how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html |
 | debugger.enabled | bool | `false` | if `true` starts the JVM with arguments to allow remote debugging |
@@ -38,7 +43,7 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | metrics.serviceMonitor.interval | string | `"10s"` | Prometheus scraping interval |
 | metrics.serviceMonitor.namespace | string | `"monitoring"` | namespace where serviceMonitor is deployed |
 | metrics.serviceMonitor.path | string | `"/metrics"` | Prometheus scraping path |
-| nodeSelector | object | `{}` | allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod containerSecurityContext: |
+| nodeSelector | object | `{}` |  |
 | persistence.accessModes | list | `["ReadWriteOnce"]` | used to build the PVC for the stateful set |
 | persistence.enabled | bool | `true` | if true, then use persistent storage (recommended for production) |
 | persistence.storageClassName | string | `"longhorn"` | used to build the PVC for teh stateful set |
@@ -66,6 +71,8 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | security.oauth2.roleAliases.some-amq-role[0] | string | `"CCN.BANKCARD.INFO"` | elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role |
 | security.oauth2.rolesClaimName | string | `"roles"` | name of claim in the JWT containing strings to alias to an ActiveMQ role |
 | security.oauth2.tenantId | string | `"44b79a67-d972-49ba-9167-8eb05f754a1a"` | In Microsoft Entra, the tenant ID in use |
+| service.loadBalancer.annotations."metallb.universe.tf/allow-shared-ip" | string | `"172.30.0.8"` |  |
+| service.loadBalancer.annotations."metallb.universe.tf/ip-allocated-from-pool" | string | `"default-pool"` |  |
 | tls.enabled | bool | `true` | if `true`, will create a self-signed certificate and require remote connections to use TLS, i.e. by adding `?sslEnabled=true;trustAll=true` to the broker connection URL |
 | tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/tls/server-keystore.p12","keyStoreType":"PKCS12","sslEnabled":"true","trustStorePassword":"securepass","trustStorePath":"/var/lib/artemis-instance/tls/server-ca-truststore.p12","trustStoreType":"PKCS12"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
 | tls.parameters.keyStoreAlias | string | `"server"` | alias in the keystore for the key & cert |
