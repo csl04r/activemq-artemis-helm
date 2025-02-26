@@ -11,11 +11,12 @@ spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
-    {{- if .Values.metrics.enabled }}
       annotations:
+        {{- include "artemis.psa" . | nindent 8 }}
+        {{- if .Values.metrics.enabled }}
         prometheus.io/scrape: "true"
         prometheus.io/port: "9404"
-    {{- end }}
+        {{- end }}
       labels:
         {{- include "artemis.labels.live" . | nindent 8 }}
     spec:

@@ -11,7 +11,7 @@ else
   LOGIN_OPTION="--require-login"
 fi
 
-if ! [ -f ./etc/broker.xml ]; then
+if ! [ -x ./etc/broker.xml ]; then
     CREATE_ARGUMENTS="--user ${ARTEMIS_USER} --password ${ARTEMIS_PASSWORD} --silent ${LOGIN_OPTION} ${EXTRA_ARGS}"
     /opt/activemq-artemis/bin/artemis create ${CREATE_ARGUMENTS} .
 else

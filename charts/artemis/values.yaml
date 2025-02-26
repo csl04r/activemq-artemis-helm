@@ -101,7 +101,7 @@ tls:
     # -- whether to use SSL/TLS
     sslEnabled: "true"
     # -- keystore holding key & cert for the broker
-    keyStorePath: /var/lib/artemis-instance/tls/server-keystore.p12
+    keyStorePath: /var/lib/artemis-instance/data/tls/server-keystore.p12
     # -- password for the keystore
     keyStorePassword: securepass
     # -- type of keystore
@@ -109,7 +109,7 @@ tls:
     # -- alias in the keystore for the key & cert
     keyStoreAlias: server
     # -- truststore holding CA certs for the broker
-    trustStorePath: /var/lib/artemis-instance/tls/server-ca-truststore.p12
+    trustStorePath: /var/lib/artemis-instance/data/tls/server-ca-truststore.p12
     # -- password for the truststore
     trustStorePassword: securepass
     # -- type of truststore
@@ -122,9 +122,7 @@ debugger:
 
 
 # -- allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
-# podSecurityContext:
-# -- allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
-containerSecurityContext:
+podSecurityContext:
   # -- if `true` run the container as a non-root user
   runAsNonRoot: true
   # -- the user id to use when running the container
@@ -133,6 +131,16 @@ containerSecurityContext:
   runAsGroup: 1001
   # -- group id of mounted volumes (must match runAsGroup for this to work)
   fsGroup: 1001
+
+podSecurityAdmission:
+    # -- if `true` add a pod security policy admission annotations to the pod
+    enabled: true
+    # -- must be one of `enforce`, `audit`, or `warn`
+    mode: enforce
+    # -- must be one of `privileged`, `baseline`, or `restricted`.
+    level: restricted
+    # -- must be a valid Kubernetes minor version, or `latest`
+    version: latest
 
 nodeSelector: { }
 

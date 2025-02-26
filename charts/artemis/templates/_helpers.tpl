@@ -73,15 +73,34 @@ initContainers:
 - name: setup-tls-certs
   image: {{ required "image repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
   imagePullPolicy: {{ .Values.image.pullPolicy}}
-  workingDir: /var/lib/artemis-instance
+  workingDir: /var/lib/artemis-instance/data
   command:
     - bash
     - /tmp/scripts/create-self-signed-cert.sh
+  env:
+    - name: SHW_COST_CENTER
+      value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
+    - name: RELEASE_NAME
+      value: {{ .Release.Name }}
+    - name: HELM_FULLNAME
+      value: {{ include "artemis.fullname" . }}
+      # Use downward API to get the namespace & pod name
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+
   volumeMounts:
     - name: scripts
       mountPath: /tmp/scripts
     - name: instance
       mountPath: /var/lib/artemis-instance
+    - name: data
+      mountPath: /var/lib/artemis-instance/data
 
 - name: setup-broker
   image: {{ required "image repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
@@ -91,6 +110,8 @@ initContainers:
     - bash
     - /tmp/scripts/setup-broker.sh
   env:
+    - name: SHW_COST_CENTER
+      value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
     - name: ARTEMIS_PASSWORD
       valueFrom:
         secretKeyRef:
@@ -171,10 +192,8 @@ containers:
             key: clusterPassword
     - name: ENABLE_JMX_EXPORTER
       value: {{ .Values.metrics.enabled | quote }}
-  {{- if .Values.containerSecurityContext }}
-  securityContext:
-    {{- toYaml .Values.containerSecurityContext | nindent 10 }}
-  {{- end }}
+    - name: SHW_COST_CENTER
+      value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
   volumeMounts:
   - name: instance
     mountPath: /var/lib/artemis-instance
@@ -185,7 +204,7 @@ containers:
 serviceAccountName: {{ include "artemis.fullname" . }}
 {{- if .Values.podSecurityContext }}
 securityContext:
-  {{- toYaml .Values.podSecurityContext | nindent 8 }}
+  {{- toYaml .Values.podSecurityContext | nindent 2 }}
 {{- end }}
 {{- with .Values.nodeSelector }}
 nodeSelector:
@@ -595,4 +614,24 @@ activemq {
 
 {{- define "artemis.oauth2.rolealiases" -}}
 
+{{- end -}}
+
+{{- define "artemis.psa" -}}
+    {{- with .Values.podSecurityAdmission }}
+        {{- if .enabled }}
+# The per-mode level label indicates which policy level to apply for the mode.
+# MODE must be one of `enforce`, `audit`, or `warn`.
+# LEVEL must be one of `privileged`, `baseline`, or `restricted`.
+pod-security.kubernetes.io/{{ .mode | default "enforce" }}: {{ .level | default "restricted" | quote }}
+
+# Optional: per-mode version label that can be used to pin the policy to the
+# version that shipped with a given Kubernetes minor version (for example v1.32).
+# MODE must be one of `enforce`, `audit`, or `warn`.
+# VERSION must be a valid Kubernetes minor version, or `latest`.
+pod-security.kubernetes.io/{{ .mode | default "enforce" }}-version: {{ .version | default "latest" | quote }}
+        {{- end }}
+    {{- end }}
+{{- end -}}
+
+{{- define "artemis.serviceaccount" -}}
 {{- end -}}

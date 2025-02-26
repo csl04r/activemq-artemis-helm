@@ -24,11 +24,6 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | addressSettings[0].settings.messageCounterHistoryDayLimit | int | `10` | configures the address settings, see the artemis docs for details |
 | addresses | list | `[{"name":"DLQ"},{"name":"ExpiryQueue"}]` | list of named address (JMS destinations) to pre-populate in the broker |
 | affinity | object | `{}` |  |
-| containerSecurityContext | object | `{"fsGroup":1001,"runAsGroup":1001,"runAsNonRoot":true,"runAsUser":1001}` | allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
-| containerSecurityContext.fsGroup | int | `1001` | group id of mounted volumes (must match runAsGroup for this to work) |
-| containerSecurityContext.runAsGroup | int | `1001` | the group id to use when running the container |
-| containerSecurityContext.runAsNonRoot | bool | `true` | if `true` run the container as a non-root user |
-| containerSecurityContext.runAsUser | int | `1001` | the user id to use when running the container |
 | core | object | `{"criticalAnalyzerPolicy":"SHUTDOWN"}` | additional core settings. Key, values are automatically expanded |
 | core.criticalAnalyzerPolicy | string | `"SHUTDOWN"` | how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html |
 | debugger.enabled | bool | `false` | if `true` starts the JVM with arguments to allow remote debugging |
@@ -48,6 +43,15 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | persistence.enabled | bool | `true` | if true, then use persistent storage (recommended for production) |
 | persistence.storageClassName | string | `"longhorn"` | used to build the PVC for teh stateful set |
 | persistence.storageSize | string | `"8Gi"` | used to build the PVC for the stateful set |
+| podSecurityAdmission.enabled | bool | `true` | if `true` add a pod security policy admission annotations to the pod |
+| podSecurityAdmission.level | string | `"restricted"` | must be one of `privileged`, `baseline`, or `restricted`. |
+| podSecurityAdmission.mode | string | `"enforce"` | must be one of `enforce`, `audit`, or `warn` |
+| podSecurityAdmission.version | string | `"latest"` | must be a valid Kubernetes minor version, or `latest` |
+| podSecurityContext | object | `{"fsGroup":1001,"runAsGroup":1001,"runAsNonRoot":true,"runAsUser":1001}` | allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod |
+| podSecurityContext.fsGroup | int | `1001` | group id of mounted volumes (must match runAsGroup for this to work) |
+| podSecurityContext.runAsGroup | int | `1001` | the group id to use when running the container |
+| podSecurityContext.runAsNonRoot | bool | `true` | if `true` run the container as a non-root user |
+| podSecurityContext.runAsUser | int | `1001` | the user id to use when running the container |
 | readinessProbe.initialDelaySeconds | int | `5` |  |
 | readinessProbe.periodSeconds | int | `10` |  |
 | readinessProbe.tcpSocket.port | string | `"netty"` |  |
@@ -74,14 +78,14 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | service.loadBalancer.annotations."metallb.universe.tf/allow-shared-ip" | string | `"172.30.0.8"` |  |
 | service.loadBalancer.annotations."metallb.universe.tf/ip-allocated-from-pool" | string | `"default-pool"` |  |
 | tls.enabled | bool | `true` | if `true`, will create a self-signed certificate and require remote connections to use TLS, i.e. by adding `?sslEnabled=true;trustAll=true` to the broker connection URL |
-| tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/tls/server-keystore.p12","keyStoreType":"PKCS12","sslEnabled":"true","trustStorePassword":"securepass","trustStorePath":"/var/lib/artemis-instance/tls/server-ca-truststore.p12","trustStoreType":"PKCS12"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
+| tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/data/tls/server-keystore.p12","keyStoreType":"PKCS12","sslEnabled":"true","trustStorePassword":"securepass","trustStorePath":"/var/lib/artemis-instance/data/tls/server-ca-truststore.p12","trustStoreType":"PKCS12"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
 | tls.parameters.keyStoreAlias | string | `"server"` | alias in the keystore for the key & cert |
 | tls.parameters.keyStorePassword | string | `"securepass"` | password for the keystore |
-| tls.parameters.keyStorePath | string | `"/var/lib/artemis-instance/tls/server-keystore.p12"` | keystore holding key & cert for the broker |
+| tls.parameters.keyStorePath | string | `"/var/lib/artemis-instance/data/tls/server-keystore.p12"` | keystore holding key & cert for the broker |
 | tls.parameters.keyStoreType | string | `"PKCS12"` | type of keystore |
 | tls.parameters.sslEnabled | string | `"true"` | whether to use SSL/TLS |
 | tls.parameters.trustStorePassword | string | `"securepass"` | password for the truststore |
-| tls.parameters.trustStorePath | string | `"/var/lib/artemis-instance/tls/server-ca-truststore.p12"` | truststore holding CA certs for the broker |
+| tls.parameters.trustStorePath | string | `"/var/lib/artemis-instance/data/tls/server-ca-truststore.p12"` | truststore holding CA certs for the broker |
 | tls.parameters.trustStoreType | string | `"PKCS12"` | type of truststore |
 | tolerations | list | `[]` |  |
 

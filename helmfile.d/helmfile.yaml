@@ -17,6 +17,13 @@ releases:
    chart: ../charts/artemis
    kubeContext: chad-lb9937
    values:
+     - global:
+         shwCostCenter: lb9937
+     - service:
+         loadBalancer:
+           annotations:
+             metallb.universe.tf/allow-shared-ip: "10.20.132.79"
+             metallb.universe.tf/ip-allocated-from-pool: "default-pool"
      - debugStatefulSet: false
      - persistence:
          enabled: true
