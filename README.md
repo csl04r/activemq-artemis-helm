@@ -1,7 +1,9 @@
 This chart installs [Apache ActiveMQ Artemis](https://activemq.apache.org/components/artemis/)
 
 ## Docker image
-This chart uses the apache/activemq-artemis image.
+This chart has been modified from the upstream to work with a 
+[specially extended version the apache/activemq-artemis image](https://github.com/sherwin-williams-co/activemq-shw-extensions),
+`sherwin-williams-co/activemq-shw-extensions` which adds the OAuth2LoginModule JAAS module.
 
 ## Usage
 
@@ -11,14 +13,15 @@ Please refer to Helm's [documentation](https://helm.sh/docs/) to get started.
 Once Helm is set up properly, add the repo as follows:
 
 ```console
-helm repo add activemq-artemis https://deviceinsight.github.io/activemq-artemis-helm
+helm repo add rt https://artifactory.sherwin.com/artifactory/helm-local
 ```
 
-## Developer Notes
+Then you can install the chart:
 
-### Releasing
-* follow standard gitflow release
-* remove `-SNAPSHOT` from the chart version in charts/artemis/Chart.yaml
-* adapt `CHANGELOG.md`
-* bump up chart version (with `-SNAPSHOT`) for next development cycle
-* after pushing  the master, chart will be automatically pushed to github pages
+```console
+helm install my-artemis rt/activemq-artemis -f my-values.yaml
+```
+
+# Values Documentation
+See the [README in the chart directory](./charts/artemis/README.md) for more information on the values that can be set.
+

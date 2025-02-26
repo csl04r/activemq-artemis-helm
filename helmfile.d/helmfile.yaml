@@ -18,9 +18,6 @@ releases:
    kubeContext: chad-lb9937
    values:
      - debugStatefulSet: false
-     - image:
-         repository: docker.artifactory.sherwin.com/merchant-services/activemq-artemis
-         tag: "0.0.4"
      - persistence:
          enabled: true
          storageClass: longhorn

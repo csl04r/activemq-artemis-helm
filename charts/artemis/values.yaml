@@ -1,12 +1,16 @@
+# -- number of replicas in the stateful set. Do not set value greater than 1 unless you have a good reason
 replicaCount: 1
 
 image:
-## repository and image tag are required
-  repository: docker.artifactory.sherwin.com/merchant-services/activemq-artemis
+# -- required value to identify the image
+  repository: docker.artifactory.sherwin.com/sherwin-williams-co/activemq-shw-extensions
+
+  # -- required value to identify the image
   tag: ""
   pullPolicy: IfNotPresent
   pullSecrets: []
 
+# -- JVM arguments to include on the artemis server command line
 javaArgs: >-
   -XX:AutoBoxCacheMax=20000 
   -XX:+PrintClassHistogram 
@@ -32,10 +36,15 @@ resources:
     memory: 794Mi
 
 persistence:
+  # -- if true, then use persistent storage (recommended for production)
   enabled: true
+  # -- used to build the PVC for the stateful set
   accessModes:
     - ReadWriteOnce
+  # -- used to build the PVC for the stateful set
   storageSize: 8Gi
+  # -- used to build the PVC for teh stateful set
+  storageClassName: "longhorn"
 
 # livenessProbe:
   # httpGet:
@@ -50,52 +59,71 @@ readinessProbe:
   periodSeconds: 10
 
 metrics:
-  ## metrics.enabled if `true` export prometheus metrics
+  # -- if `true` export prometheus metrics
   enabled: true
   serviceMonitor:
-    ## metrics.serviceMonitor.enabled if `true` and metrics.enabled `true` then deploy service monitor
+    # -- if `true` and metrics.enabled `true` then deploy service monitor
     enabled: false
-    ## metrics.serviceMonitor.namespace namespace where serviceMonitor is deployed
+    # -- namespace where serviceMonitor is deployed
     namespace: monitoring
-    ## metrics.serviceMonitor.path Prometheus scraping path
+    # -- Prometheus scraping path
     path: /metrics
-    ## metrics.serviceMonitor.interval Prometheus scraping interval
+    # -- Prometheus scraping interval
     interval: 10s
 
-## core additional core settings. Key, values are automatically expanded
+# -- additional core settings. Key, values are automatically expanded
 core:
-  ## core.criticalAnalyzerPolicy how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html
+  # -- how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html
   criticalAnalyzerPolicy: SHUTDOWN
 
+# -- list of named address (JMS destinations) to pre-populate in the broker
 addresses:
   - name: DLQ
   - name: ExpiryQueue
 
+# -- list of address settings to include in the broker.xml
 addressSettings:
+  # -- pattern of address name to match, use `#` for wildcard
   - match: "#"
+    # -- settings to add to the address
     settings:
+      # -- configures the address settings, see the artemis docs for details
       deadLetterAddress: DLQ
+      # -- configures the address settings, see the artemis docs for details
       expiryAddress: ExpiryQueue
+      # -- configures the address settings, see the artemis docs for details
       messageCounterHistoryDayLimit: 10
 tls:
+  # -- if `true`, will create a self-signed certificate and require remote connections to use TLS, i.e. by adding `?sslEnabled=true;trustAll=true` to the broker connection URL
   enabled: true
+  # -- a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs
   parameters:
+    # -- whether to use SSL/TLS
     sslEnabled: "true"
+    # -- keystore holding key & cert for the broker
     keyStorePath: /var/lib/artemis-instance/tls/server-keystore.p12
+    # -- password for the keystore
     keyStorePassword: securepass
+    # -- type of keystore
     keyStoreType: PKCS12
+    # -- alias in the keystore for the key & cert
     keyStoreAlias: server
+    # -- truststore holding CA certs for the broker
     trustStorePath: /var/lib/artemis-instance/tls/server-ca-truststore.p12
+    # -- password for the truststore
     trustStorePassword: securepass
+    # -- type of truststore
     trustStoreType: PKCS12
 debugger:
+  # -- if `true` starts the JVM with arguments to allow remote debugging
   enabled: false
+  # -- the port to listen for remote debugging connections
   port: 8000
 
 
-## podSecurityContext allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+# -- allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
 # podSecurityContext:
-## containerSecurityContext allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+# -- allows setting security context for the container: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
 # containerSecurityContext:
 
 nodeSelector: {}
@@ -105,36 +133,39 @@ tolerations: []
 affinity: {}
 
 security:
+  # -- security configuration for clients running in the same Kubernetes cluster
   kubernetes:
-    ## security.kubernetes.enabled if `true` use kubernetes service account token authentication and authorization
+    # -- if `true` allow kubernetes service account token authentication and authorization
     enabled: true
-    clients: []
-      ## security.kubernetes.clients[].name a known applications that will connect from the K8s cluster, used to create an AMQ role and destination prefix
-#     - name: OURAPP
-        ## security.kubernetes.clients[].fullyQualifiedServiceAccountName the fully qualified service account name to acquire this AMQ role
-#       fullyQualifiedServiceAccountName: system:serviceaccount:our-ns:our-app
-    ## security.kubernetes.roleAliases maps ActiveMQ roles to a list of k8s principals
-    roleAliases: {}
-#     amq: # the activemq role to assign
-#       ## security.kubernetes.roleAliases.amq[] list of k8s prinicpals to get the `amq` role
-#       - system:serviceaccount:shw-na-pos:pol # list of k8s principals to receive the role
-#       - system:serviceaccount:shw-na-pos:shercolor
+    clients:
+      # -- moniker for a known application that will connect from the same k8s cluster, used to create an AMQ role and destination prefix
+      - name: OURAPP
+        # -- the fully qualified service account name to acquire this AMQ role
+        fullyQualifiedServiceAccountName: system:serviceaccount:our-namespace:our-app
+    # -- maps ActiveMQ roles to a list of k8s principals
+    roleAliases:
+      # -- name of the ActiveMQ role to assign
+      some-amq-role: # the activemq role to assign
+        # -- list of k8s prinicpals to get the above ActiveMQ role
+        - system:serviceaccount:shw-na-pos:pol
+        - system:serviceaccount:shw-na-pos:shercolor
   oauth2:
-    ## security.oauth2.enabled if `true` use OAuth2 JWT token authentication and authorization
+    # -- if `true` use OAuth2 JWT token authentication and authorization
     enabled: true
-    ## security.oauth2.jaasModule LoginModule implementation class
+    # -- LoginModule implementation class
     jaasModule: shw.activemq.extension.security.OAuth2LoginModule
-    ## security.oauth2.tenantId In Microsoft Entra, the tenant ID in use
+    # -- In Microsoft Entra, the tenant ID in use
     tenantId: 44b79a67-d972-49ba-9167-8eb05f754a1a
-    ## security.oauth2.audience audience in JWT which identifies this group of ActiveMQ services
+    # -- audience in JWT which identifies this group of ActiveMQ services
     audience: 8bddbe55-946d-4033-8832-a1e752e97709
-    ## security.oauth2.issuerUrl the URL of the OAuth2 issuer
+    # -- URL of the OAuth2 issuer
     issuerUrl: https://login.microsoftonline.com/44b79a67-d972-49ba-9167-8eb05f754a1a/v2.0
-    ## security.oauth2.rolesClaimName name of claim in the JWT containing roles to add to the authenticated subject
+    # -- name of claim in the JWT containing strings to alias to an ActiveMQ role
     rolesClaimName: roles
-    # security.oauth2.roleAliases maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role.
-    roleAliases: {}
-#       amq: # the ActiveMQ role to assign to the JWT role
-#         ## security.oauth2.roleAliases.amq[] list of elements in the roles claim to get the `amq` ActiveMQ role
-#         - CCN.BANKCARD.INFO # the JWT role to assign to the ActiveMQ role
-#         - CCN.STORE.INFO
+    # -- maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role.
+    roleAliases:
+        # -- the ActiveMQ role to assign to the subject presenting the JWT
+        some-amq-role:
+          # -- elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role
+          - CCN.BANKCARD.INFO
+          - CCN.STORE.INFO

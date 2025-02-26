@@ -1,9 +1,10 @@
 apiVersion: v1
-appVersion: latest-alpine
+appVersion: 2.39.0.11
 name: artemis
-description: A Helm chart installing Apache ActiveMQ Artemis
+description: A Helm chart installing Apache ActiveMQ Artemis, forked from Device Insight GmbH (https://github.com/sherwin-williams-co/activemq-artemis-helm)
 version: 0.8.0
 icon: https://raw.githubusercontent.com/apache/activemq-artemis/2.9.0/artemis-website/src/main/resources/images/artemis-logo.png
 maintainers:
   - name: Device Insight GmbH
-  - name: Chad.S.Lauritsen@sherwin.com
+  - name: Chad Lauritsen
+    email: Chad.S.Lauritsen@sherwin.com
