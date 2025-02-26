@@ -40,7 +40,7 @@ These are exposed as a headless service for access within the cluster, and using
 # Authentication
 The broker requires valid authentication and authorization to permit connecting and messaging operations. Two primary authentication methods are provided, both centering around the use of JWT tokens.
 ## In-Cluster Authentication
-For applications running in the same, cluster, you can use Kubernetes authentication. As a best practice, ensure that a unique, identifiable service account is created for your application, and bind it to your pods. Then load the token from the filesystem path `/var/run/secrets/kubernetes.io/serviceaccount/token` and use it as the connection password to authenticate with the broker.
+For applications running in the same cluster, you can use Kubernetes authentication. As a best practice, ensure that a unique, identifiable service account is created for your application, and bind it to your pods. Then load the token from the filesystem path `/var/run/secrets/kubernetes.io/serviceaccount/token` and use it as the connection password to authenticate with the broker.
 
 ## External Authentication
 For applications running outside of the cluster, OAuth2 authentication is offered. You will need to establish and client ID and client secret in the Microsoft Entra platform, and use these to obtain a JWT authorization token. This token can then be used as the connection password to authenticate with the broker.
