@@ -1,5 +1,11 @@
 # -- number of replicas in the stateful set. Do not set value greater than 1 unless you have a good reason
 replicaCount: 1
+# -- secret values for AppRole authentication to HashiCorp vault. These are used to sign a CSR and get a valid cert for the broker.
+appRoleSecrets:
+  # -- the role ID for the AppRole
+  roleId: ""
+  # -- the secret ID for the AppRole
+  secretId: ""
 
 image:
   # -- required value to identify the image
@@ -133,14 +139,14 @@ podSecurityContext:
   fsGroup: 1001
 
 podSecurityAdmission:
-    # -- if `true` add a pod security policy admission annotations to the pod
-    enabled: true
-    # -- must be one of `enforce`, `audit`, or `warn`
-    mode: enforce
-    # -- must be one of `privileged`, `baseline`, or `restricted`.
-    level: restricted
-    # -- must be a valid Kubernetes minor version, or `latest`
-    version: latest
+  # -- if `true` add a pod security policy admission annotations to the pod
+  enabled: true
+  # -- must be one of `enforce`, `audit`, or `warn`
+  mode: enforce
+  # -- must be one of `privileged`, `baseline`, or `restricted`.
+  level: restricted
+  # -- must be a valid Kubernetes minor version, or `latest`
+  version: latest
 
 nodeSelector: { }
 

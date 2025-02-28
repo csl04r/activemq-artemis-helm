@@ -1,0 +1,7 @@
+awssimpleca.pem 2042c672
+keyfactorswissuing1.pem 30c53b9b
+keyfactorswissuing2.pem 0dc68143
+keyfactorswroot.pem 1840ab6f
+keyfactorzscaler.pem ce5818ca
+swissuing.pem 5e4aecf5
+swroot.pem 019e4efd

@@ -1,6 +1,6 @@
 # activemq-artemis
 
-![Version: 0.8.0](https://img.shields.io/badge/Version-0.8.0-informational?style=flat-square) ![AppVersion: 2.39.0.11](https://img.shields.io/badge/AppVersion-2.39.0.11-informational?style=flat-square)
+![Version: 0.8.0](https://img.shields.io/badge/Version-0.8.0-informational?style=flat-square) ![AppVersion: 2.39.0.12](https://img.shields.io/badge/AppVersion-2.39.0.12-informational?style=flat-square)
 
 A Helm chart installing Apache ActiveMQ Artemis,
 [forked](https://github.com/sherwin-williams-co/activemq-artemis-helm) from Device Insight GmbH
@@ -24,6 +24,9 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | addressSettings[0].settings.messageCounterHistoryDayLimit | int | `10` | configures the address settings, see the artemis docs for details |
 | addresses | list | `[{"name":"DLQ"},{"name":"ExpiryQueue"}]` | list of named address (JMS destinations) to pre-populate in the broker |
 | affinity | object | `{}` |  |
+| appRoleSecrets | object | `{"roleId":"","secretId":""}` | secret values for AppRole authentication to HashiCorp vault. These are used to sign a CSR and get a valid cert for the broker. |
+| appRoleSecrets.roleId | string | `""` | the role ID for the AppRole |
+| appRoleSecrets.secretId | string | `""` | the secret ID for the AppRole |
 | core | object | `{"criticalAnalyzerPolicy":"SHUTDOWN"}` | additional core settings. Key, values are automatically expanded |
 | core.criticalAnalyzerPolicy | string | `"SHUTDOWN"` | how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html |
 | debugger.enabled | bool | `false` | if `true` starts the JVM with arguments to allow remote debugging |

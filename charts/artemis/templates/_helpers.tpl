@@ -76,7 +76,10 @@ initContainers:
   workingDir: /var/lib/artemis-instance/data
   command:
     - bash
-    - /tmp/scripts/create-self-signed-cert.sh
+    - /tmp/scripts/create-cert.sh
+  envFrom:
+    - secretRef:
+        name: {{ include "artemis.fullname" . }}-approle
   env:
     - name: SHW_COST_CENTER
       value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
@@ -97,6 +100,8 @@ initContainers:
   volumeMounts:
     - name: scripts
       mountPath: /tmp/scripts
+    - name: certs
+      mountPath: /certs
     - name: instance
       mountPath: /var/lib/artemis-instance
     - name: data
@@ -121,6 +126,8 @@ initContainers:
   volumeMounts:
     - name: scripts
       mountPath: /tmp/scripts
+    - name: certs
+      mountPath: /certs
     - name: instance
       mountPath: /var/lib/artemis-instance
     - name: overrides
@@ -195,6 +202,8 @@ containers:
     - name: SHW_COST_CENTER
       value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
   volumeMounts:
+  - name: certs
+    mountPath: /certs
   - name: instance
     mountPath: /var/lib/artemis-instance
   - name: data
@@ -226,6 +235,9 @@ volumes:
 - name: scripts
   configMap:
     name: {{ include "artemis.fullname" . }}-scripts
+- name: certs
+  configMap:
+    name: {{ include "artemis.fullname" . }}-certs
 - name: instance
   emptyDir: {}
 {{- if not .Values.persistence.enabled }}

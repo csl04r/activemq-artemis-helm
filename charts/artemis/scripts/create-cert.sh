@@ -7,7 +7,7 @@ cd tls
 
 # Clean up working files on signal or exit
 # -----------------------
-trap 'echo INFO: cleaning up temp files in $PWD; rm -f *.csr openssl-*' EXIT
+#trap 'echo INFO: cleaning up temp files in $PWD; rm -f *.csr openssl-*' EXIT
 
 subject_alternate_names=(
 # probably never used
@@ -59,7 +59,7 @@ create_ca() {
   # ----------------------------------------------------------------------------------------------------
   keytool -storetype pkcs12 -keystore "$ca_keystore" \
     -storepass $STORE_PASS -keypass $KEY_PASS -alias server-ca -genkey -keyalg "RSA" -keysize 2048 \
-    -dname "CN=ActiveMQ Artemis Server Certification Authority, OU=Artemis, O=ActiveMQ" \
+    -dname "CN=ActiveMQ Artemis Server Certification Authority $SHW_COST_CENTER, OU=Artemis, O=ActiveMQ" \
     -validity $CA_VALIDITY -ext bc:c=ca:true
   # export the CA cert
   keytool -storetype pkcs12 -keystore "$ca_keystore" -storepass $STORE_PASS \
@@ -73,15 +73,24 @@ create_server_truststore() {
   keytool -storetype pkcs12 -keystore "$server_truststore" \
     -storepass $STORE_PASS -keypass $KEY_PASS \
     -importcert -alias server-ca -file "$ca_crt" -noprompt
+  for pem in /certs/*.pem
+  do
+    # shellcheck disable=SC2046
+    echo INFO Adding $pem to truststore: $(keytool \
+      -storetype pkcs12 -keystore "$server_truststore" \
+      -storepass $STORE_PASS -keypass $KEY_PASS \
+      -importcert -alias "$(basename $pem .pem)" -file "$pem" -noprompt)
+  done
 }
 
 create_server_keypair() {
   echo "INFO: create_server_keypair"
   set -e
   # Create a key pair for the server
-  keytool -storetype pkcs12 -keystore "$server_keystore" -storepass $STORE_PASS -keypass $KEY_PASS -alias server \
+  keytool -storetype pkcs12 -keystore "$server_keystore" -storepass $STORE_PASS -keypass $KEY_PASS \
+    -alias server \
     -genkey -keyalg "RSA" -keysize 2048 \
-    -dname "CN=ActiveMQ Artemis Server, OU=Artemis, O=ActiveMQ, L=AMQ, S=AMQ, C=AMQ" \
+    -dname "CN=ActiveMQ Artemis Server $SHW_COST_CENTER, OU=Artemis, O=ActiveMQ, L=AMQ, S=AMQ, C=AMQ" \
     -validity $VALIDITY -ext bc=ca:false \
     -ext eku=sA \
     -ext "san=$LOCAL_SERVER_NAMES"
@@ -96,7 +105,7 @@ create_server_signing_request() {
   set -e
   # create CSR (certificate signing request)
   keytool -storetype pkcs12 -keystore "$server_keystore" \
-    -storepass $STORE_PASS -alias server -certreq -file server.csr
+    -storepass $STORE_PASS -alias server -certreq -file server.csr -ext "san=$LOCAL_SERVER_NAMES"
 }
 
 sign_with_ca() {
@@ -111,10 +120,28 @@ sign_with_ca() {
 
 load_server_crt() {
   set -e
-  echo "INFO: load_server_crt"
+  echo "INFO: Importing server and chain"
+  hashes=/certs/hashes.txt
+  # NB: Vault still uses the entrust chain (swroot.pem, swissuing.pem) for signing
+  # these should be removed when no longer needed
+  # Ask each cert who its issuer is, and ask the issuer who its root is
+  # use as lookup table of cert file name to subject hash
+  issuerca=/certs/$(grep "$(openssl x509 -noout -issuer_hash < server.crt)" $hashes | awk '{print $1}')
+  rootca=/certs/$(grep   "$(openssl x509 -noout -issuer_hash < $issuerca)"  $hashes | awk '{print $1}')
+  cat server.crt \
+    "$issuerca" \
+    "$rootca" \
+    > server-chain.crt
+  echo INFO: Chain is $issuerca $rootca
   # load the broker Cert into the broker keystore
-  keytool -storetype pkcs12 -keystore "$server_keystore" -storepass $STORE_PASS -keypass $KEY_PASS \
-    -importcert -alias server -file "$server_crt"
+  keytool -storetype pkcs12 -keystore "$server_keystore" \
+    -storepass $STORE_PASS  \
+    -importcert -alias server -file "server-chain.crt" -noprompt || {
+    echo "ERROR: Failed to import server certificate, removing server.crt and server.csr"
+    rm -f *.crt *.csr
+    exit 1
+    }
+  echo "INFO: Server and chain imported successfully"
 }
 
 test -w "$ca_keystore" || {
@@ -127,10 +154,24 @@ test -w "$ca_keystore" || {
 if test -f "$server_crt" && cert_expire_days_gte "$server_crt" 30; then
   echo "INFO: using existing certificates"
 else
+  source /usr/local/bin/vault_sign.sh
+  VAULT_TOKEN=$(vault_approle_get_token)
+  export VAULT_TOKEN
+
   # Clean up existing files
   # -----------------------
+  rm -f "$server_keystore" server.crt server.csr
   create_server_keypair
   create_server_signing_request
-  sign_with_ca
+#  sign_with_ca
+  echo INFO: Accessing Hashicorp Vault to sign the CSR
+  vault_sign_csr server.csr > $server_crt
+  echo INFO: Signed certificate $server_crt
   load_server_crt
 fi
+
+#for a in 1 2 3 4 5 6 7 9 0 10 11 12
+#do
+#  echo sleeping $a
+#  sleep 10
+#done
