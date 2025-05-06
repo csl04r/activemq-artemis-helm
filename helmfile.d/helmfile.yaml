@@ -17,6 +17,7 @@ releases:
    chart: ../charts/artemis
    kubeContext: chad-lb9937
    values:
+     - fullnameOverride: artemis
      - appRoleSecrets:
           roleId: {{ exec "op" (list "read" "op://Sherwin/qvgybl6xcm77yc5yl4f2crkxyu/role-id") }}
           secretId: {{ exec "op" (list "read" "op://Sherwin/qvgybl6xcm77yc5yl4f2crkxyu/secret-id") }}
@@ -78,21 +79,23 @@ releases:
                - system:serviceaccount:shw-na-pos:pol # list of k8s principals to receive the role
                - system:serviceaccount:shw-na-pos:shercolor
          oauth2:
-           ## security.oauth2.enabled if `true` use OAuth2 JWT token authentication and authorization
            enabled: true
-           ## security.oauth2.jaasModule LoginModule implementation class
            jaasModule: shw.activemq.extension.security.OAuth2LoginModule
-           ## security.oauth2.tenantId In Microsoft Entra, the tenant ID in use
-           tenantId: 44b79a67-d972-49ba-9167-8eb05f754a1a
-           ## security.oauth2.audience audience in JWT which identifies this group of ActiveMQ services
-           audience: 8bddbe55-946d-4033-8832-a1e752e97709
-           ## security.oauth2.issuerUrl the URL of the OAuth2 issuer
-           issuerUrl: https://login.microsoftonline.com/44b79a67-d972-49ba-9167-8eb05f754a1a/v2.0
-           ## security.oauth2.rolesClaimName name of claim in the JWT containing roles to add to the authenticated subject
+#           tenantId: 44b79a67-d972-49ba-9167-8eb05f754a1a
+#           audience: 8bddbe55-946d-4033-8832-a1e752e97709
+#           issuerUrl: https://login.microsoftonline.com/44b79a67-d972-49ba-9167-8eb05f754a1a/v2.0
+
+           tenantId: 8df001ce-a5dc-4dba-9efe-1effae06e270
+           v1audience: api://7eb84ccd-d576-4998-9f16-193e2f990353
+           audience: 7eb84ccd-d576-4998-9f16-193e2f990353
+           v1issuerUrl: https://sts.windows.net/76928537-7d3e-4020-b43b-ad6dc9d7d97e/
+           issuerUrl: https://login.microsoftonline.com/76928537-7d3e-4020-b43b-ad6dc9d7d97e/v2.0
            rolesClaimName: roles
            # security.oauth2.roleAliases maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role.
            roleAliases:
-             amq: # the ActiveMQ role to assign to the JWT role
-               ## security.oauth2.roleAliases.amq[] list of elements in the roles claim to get the `amq` ActiveMQ role
-               - CCN.BANKCARD.INFO # the JWT role to assign to the ActiveMQ role
-               - CCN.STORE.INFO
+             CHAD:
+               - Chad.Manage
+#             amq: # the ActiveMQ role to assign to the JWT role
+#               ## security.oauth2.roleAliases.amq[] list of elements in the roles claim to get the `amq` ActiveMQ role
+#               - CCN.BANKCARD.INFO # the JWT role to assign to the ActiveMQ role
+#               - CCN.STORE.INFO

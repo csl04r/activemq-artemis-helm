@@ -73,7 +73,7 @@ create_server_truststore() {
   keytool -storetype pkcs12 -keystore "$server_truststore" \
     -storepass $STORE_PASS -keypass $KEY_PASS \
     -importcert -alias server-ca -file "$ca_crt" -noprompt
-  for pem in /certs/*.pem
+  for pem in ${CERTS_DIR:-/certs}/*.pem
   do
     # shellcheck disable=SC2046
     echo INFO Adding $pem to truststore: $(keytool \
@@ -121,17 +121,18 @@ sign_with_ca() {
 load_server_crt() {
   set -e
   echo "INFO: Importing server and chain"
-  hashes=/certs/hashes.txt
+  hashes=${CERTS_DIR:-/certs}/hashes.txt
   # NB: Vault still uses the entrust chain (swroot.pem, swissuing.pem) for signing
   # these should be removed when no longer needed
   # Ask each cert who its issuer is, and ask the issuer who its root is
   # use as lookup table of cert file name to subject hash
-  issuerca=/certs/$(grep "$(openssl x509 -noout -issuer_hash < server.crt)" $hashes | awk '{print $1}')
-  rootca=/certs/$(grep   "$(openssl x509 -noout -issuer_hash < $issuerca)"  $hashes | awk '{print $1}')
+  issuerca=${CERTS_DIR:-/certs}/$(grep "$(openssl x509 -noout -issuer_hash < server.crt)" $hashes | awk '{print $1}')
+  rootca=${CERTS_DIR:-/certs}/$(grep   "$(openssl x509 -noout -issuer_hash < $issuerca)"  $hashes | awk '{print $1}')
   cat server.crt \
     "$issuerca" \
     "$rootca" \
     > server-chain.crt
+  vault_fetch_chain > server-chain.pem
   echo INFO: Chain is $issuerca $rootca
   # load the broker Cert into the broker keystore
   keytool -storetype pkcs12 -keystore "$server_keystore" \
@@ -154,7 +155,7 @@ test -w "$ca_keystore" || {
 if test -f "$server_crt" && cert_expire_days_gte "$server_crt" 30; then
   echo "INFO: using existing certificates"
 else
-  source /usr/local/bin/vault_sign.sh
+  source ${VAULT_SIGN_SCRIPT:-/usr/local/bin/vault_sign.sh}
   VAULT_TOKEN=$(vault_approle_get_token)
   export VAULT_TOKEN
 

@@ -27,8 +27,7 @@ See the [README in the chart directory](./charts/artemis/README.md) for more inf
 
 
 # Accessing the Broker
-The broker can be accessed both from inside and outside of the cluster. All access requires TLS, and at this time, no 
-trusted certificate is available so you have to disable TLS verification of the broker certificate. (TODO: get real, cluster-specific certs).
+The broker can be accessed both from inside and outside of the cluster. All access requires TLS.
 
 ActiveMQ Artemis exposes a number of messaging protocols, including JMS, AMQP, STOMP, and MQTT. The broker is configured to listen on the following ports:
  - 61616: OpenWire for JMS connections
@@ -38,7 +37,9 @@ ActiveMQ Artemis exposes a number of messaging protocols, including JMS, AMQP, S
 These are exposed as a headless service for access within the cluster, and using a metallb load balancer for access outside the cluster. 
 
 # Authentication
-The broker requires valid authentication and authorization to permit connecting and messaging operations. Two primary authentication methods are provided, both centering around the use of JWT tokens.
+The broker requires valid authentication and authorization to permit connecting and messaging operations. 
+Two primary authentication methods are provided, both centering around the use of JWT tokens.
+
 ## In-Cluster Authentication
 For applications running in the same cluster, you can use Kubernetes authentication. As a best practice, ensure that a unique, identifiable service account is created for your application, and bind it to your pods. Then load the token from the filesystem path `/var/run/secrets/kubernetes.io/serviceaccount/token` and use it as the connection password to authenticate with the broker.
 
@@ -77,7 +78,7 @@ public class JmsTest {
         var connectionFactory = new ActiveMQConnectionFactory(
                 "tcp://" +
                         hostname +
-                        ":61616?sslEnabled=true;trustAll=true");
+                        ":61616?sslEnabled=true");
         // I recommend passing the password as a parameter to the createConnection method
         // instead of the connection factory constructor so that it can be refreshed.
         // the authentication is only checked upon connection creation, or perhaps when
