@@ -5,9 +5,6 @@ set -e
 mkdir -p tls
 cd tls
 
-# Clean up working files on signal or exit
-# -----------------------
-#trap 'echo INFO: cleaning up temp files in $PWD; rm -f *.csr openssl-*' EXIT
 
 subject_alternate_names=(
 # probably never used
@@ -121,19 +118,9 @@ sign_with_ca() {
 load_server_crt() {
   set -e
   echo "INFO: Importing server and chain"
-  hashes=${CERTS_DIR:-/certs}/hashes.txt
-  # NB: Vault still uses the entrust chain (swroot.pem, swissuing.pem) for signing
-  # these should be removed when no longer needed
-  # Ask each cert who its issuer is, and ask the issuer who its root is
-  # use as lookup table of cert file name to subject hash
-  issuerca=${CERTS_DIR:-/certs}/$(grep "$(openssl x509 -noout -issuer_hash < server.crt)" $hashes | awk '{print $1}')
-  rootca=${CERTS_DIR:-/certs}/$(grep   "$(openssl x509 -noout -issuer_hash < $issuerca)"  $hashes | awk '{print $1}')
-  cat server.crt \
-    "$issuerca" \
-    "$rootca" \
-    > server-chain.crt
-  vault_fetch_chain > server-chain.pem
-  echo INFO: Chain is $issuerca $rootca
+  cat server.crt > server-chain.crt
+  vault_fetch_chain >> server-chain.crt
+  echo INFO: Chain is $(< server-chain.crt)
   # load the broker Cert into the broker keystore
   keytool -storetype pkcs12 -keystore "$server_keystore" \
     -storepass $STORE_PASS  \
