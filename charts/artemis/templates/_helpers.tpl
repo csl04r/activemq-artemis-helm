@@ -69,43 +69,9 @@ app.kubernetes.io/ha: backup
 {{- end -}}
 
 {{- define "artemis.statefulset.spec" -}}
+{{ $fullname := include "artemis.fullname" . }}
+{{ $shwCostCenter := (.Values.global).shwCostCenter | default "XXXXXX" }}
 initContainers:
-- name: setup-tls-certs
-  image: {{ required "image repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
-  imagePullPolicy: {{ .Values.image.pullPolicy}}
-  workingDir: /var/lib/artemis-instance/data
-  command:
-    - bash
-    - /tmp/scripts/create-cert.sh
-  envFrom:
-    - secretRef:
-        name: {{ include "artemis.fullname" . }}-approle
-  env:
-    - name: SHW_COST_CENTER
-      value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
-    - name: RELEASE_NAME
-      value: {{ .Release.Name }}
-    - name: HELM_FULLNAME
-      value: {{ include "artemis.fullname" . }}
-      # Use downward API to get the namespace & pod name
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-
-  volumeMounts:
-    - name: scripts
-      mountPath: /tmp/scripts
-    - name: certs
-      mountPath: /certs
-    - name: instance
-      mountPath: /var/lib/artemis-instance
-    - name: data
-      mountPath: /var/lib/artemis-instance/data
 
 - name: setup-broker
   image: {{ required "image repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
@@ -133,6 +99,83 @@ initContainers:
     - name: overrides
       mountPath: /var/lib/artemis-instance/etc-override
 containers:
+{{- if (.Values.tls).enabled }}
+{{- with .Values.pycertmanager }}
+ {{- if .enabled }}
+- name: pycertmanager
+  {{- with .image }}
+  image: {{ required "pycertmanager.image.repository is required" .repository }}:{{ .tag | default "latest" }}
+    {{- if .pullPolicy }}
+  imagePullPolicy: {{ .Values.image.pullPolicy}}
+    {{- end }}
+  {{- end }}
+  workingDir: /var/lib/artemis-instance/data
+  args:
+    - --tls-dir
+    - ./tls
+    - --vault-role-name
+    - stores-edge
+    - --common-name
+    - {{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
+    - --extra-dns-san
+    - localhost,{{$fullname}}-0,{{$fullname}}-0.{{$.Release.Namespace}},{{$fullname}}.{{$.Release.Namespace}}.svc.cluster.local,{{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
+    {{- with $.Values.tls.parameters }}
+    - --make-p12
+    - --p12-alias
+    - {{ .keyStoreAlias | default "server" }}
+    - --p12-file-name
+    - tls.p12
+    {{- end }}
+  envFrom:
+    - secretRef:
+        name: {{$fullname}}-approle
+  env:
+    - name: P12_PASSWORD
+      value: {{ $.Values.tls.parameters.keyStorePassword }}
+    - name: SHW_COST_CENTER
+      value: {{ $shwCostCenter }}
+    - name: RELEASE_NAME
+      value: {{ $.Release.Name }}
+    - name: HELM_FULLNAME
+      value: {{$fullname}}
+      # Use downward API to get the namespace & pod name
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+  volumeMounts:
+    - name: data
+      mountPath: /var/lib/artemis-instance/data
+  readinessProbe:
+    exec:
+      command:
+        - ls
+        - -l
+        - {{ $.Values.tls.parameters.keyStorePath }}
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    successThreshold: 1
+    failureThreshold: 3
+  livenessProbe:
+    exec:
+      command:
+        - ls
+        - -l
+        - {{ $.Values.tls.parameters.keyStorePath }}
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    timeoutSeconds: 2
+    successThreshold: 1
+    failureThreshold: 3
+  {{- end }}
+{{- end }}
+{{- end }}
+
 - name: activemq-artemis
   workingDir: /var/lib/artemis-instance
   command:

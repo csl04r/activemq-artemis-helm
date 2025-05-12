@@ -23,6 +23,15 @@ releases:
           secretId: {{ exec "op" (list "read" "op://Sherwin/qvgybl6xcm77yc5yl4f2crkxyu/secret-id") }}
      - global:
          shwCostCenter: lb9937
+     - tls:
+         parameters:
+           keyStorePath: /var/lib/artemis-instance/data/tls/tls.p12
+           keyStorePassword: changemoi
+     - pycertmanager:
+         enabled: true
+         image:
+           repository: docker.artifactory.sherwin.com/sherwin-williams-co/pycertmanager
+           tag: 0.0.3
      - service:
          loadBalancer:
            annotations:

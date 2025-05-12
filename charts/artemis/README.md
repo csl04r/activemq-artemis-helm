@@ -1,6 +1,6 @@
 # activemq-artemis
 
-![Version: 0.9.0](https://img.shields.io/badge/Version-0.9.0-informational?style=flat-square) ![AppVersion: 2.41.0.0](https://img.shields.io/badge/AppVersion-2.41.0.0-informational?style=flat-square)
+![Version: 0.9.0](https://img.shields.io/badge/Version-0.9.0-informational?style=flat-square) ![AppVersion: 2.41.0.1](https://img.shields.io/badge/AppVersion-2.41.0.1-informational?style=flat-square)
 
 A Helm chart installing Apache ActiveMQ Artemis,
 [forked](https://github.com/sherwin-williams-co/activemq-artemis-helm) from Device Insight GmbH
@@ -29,6 +29,7 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | appRoleSecrets.secretId | string | `""` | the secret ID for the AppRole |
 | core | object | `{"criticalAnalyzerPolicy":"SHUTDOWN"}` | additional core settings. Key, values are automatically expanded |
 | core.criticalAnalyzerPolicy | string | `"SHUTDOWN"` | how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html |
+| debugger | object | `{"enabled":false,"port":8000}` | type of truststore    trustStoreType: PKCS12 |
 | debugger.enabled | bool | `false` | if `true` starts the JVM with arguments to allow remote debugging |
 | debugger.port | int | `8000` | the port to listen for remote debugging connections |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
@@ -55,6 +56,9 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | podSecurityContext.runAsGroup | int | `1001` | the group id to use when running the container |
 | podSecurityContext.runAsNonRoot | bool | `true` | if `true` run the container as a non-root user |
 | podSecurityContext.runAsUser | int | `1001` | the user id to use when running the container |
+| pycertmanager.enabled | bool | `true` | if `true` use [pycertmanager](https://github.com/sherwin-williams-co/pycertmanager) to manage the TLS certs and PCKS#12 keystore for the broker. If `false`, do it yourself some other way. TLS certs are required. |
+| pycertmanager.image.repository | string | `"docker.artifactory.sherwin.com/sherwin-williams-co/pycertmanager"` |  |
+| pycertmanager.image.tag | string | `"0.0.3"` |  |
 | readinessProbe.initialDelaySeconds | int | `5` |  |
 | readinessProbe.periodSeconds | int | `10` |  |
 | readinessProbe.tcpSocket.port | string | `"netty"` |  |
@@ -81,15 +85,12 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | service.loadBalancer.annotations."metallb.universe.tf/allow-shared-ip" | string | `"172.30.0.8"` |  |
 | service.loadBalancer.annotations."metallb.universe.tf/ip-allocated-from-pool" | string | `"default-pool"` |  |
 | tls.enabled | bool | `true` | if `true`, will create a self-signed certificate and require remote connections to use TLS, i.e. by adding `?sslEnabled=true;trustAll=true` to the broker connection URL |
-| tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/data/tls/server-keystore.p12","keyStoreType":"PKCS12","sslEnabled":"true","trustStorePassword":"securepass","trustStorePath":"/var/lib/artemis-instance/data/tls/server-ca-truststore.p12","trustStoreType":"PKCS12"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
+| tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/data/tls/tls.p12","keyStoreType":"PKCS12","sslEnabled":"true"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
 | tls.parameters.keyStoreAlias | string | `"server"` | alias in the keystore for the key & cert |
 | tls.parameters.keyStorePassword | string | `"securepass"` | password for the keystore |
-| tls.parameters.keyStorePath | string | `"/var/lib/artemis-instance/data/tls/server-keystore.p12"` | keystore holding key & cert for the broker |
+| tls.parameters.keyStorePath | string | `"/var/lib/artemis-instance/data/tls/tls.p12"` | keystore holding key & cert for the broker |
 | tls.parameters.keyStoreType | string | `"PKCS12"` | type of keystore |
 | tls.parameters.sslEnabled | string | `"true"` | whether to use SSL/TLS |
-| tls.parameters.trustStorePassword | string | `"securepass"` | password for the truststore |
-| tls.parameters.trustStorePath | string | `"/var/lib/artemis-instance/data/tls/server-ca-truststore.p12"` | truststore holding CA certs for the broker |
-| tls.parameters.trustStoreType | string | `"PKCS12"` | type of truststore |
 | tolerations | list | `[]` |  |
 
 ----------------------------------------------

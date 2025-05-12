@@ -107,7 +107,7 @@ tls:
     # -- whether to use SSL/TLS
     sslEnabled: "true"
     # -- keystore holding key & cert for the broker
-    keyStorePath: /var/lib/artemis-instance/data/tls/server-keystore.p12
+    keyStorePath: /var/lib/artemis-instance/data/tls/tls.p12
     # -- password for the keystore
     keyStorePassword: securepass
     # -- type of keystore
@@ -115,11 +115,11 @@ tls:
     # -- alias in the keystore for the key & cert
     keyStoreAlias: server
     # -- truststore holding CA certs for the broker
-    trustStorePath: /var/lib/artemis-instance/data/tls/server-ca-truststore.p12
+#    trustStorePath: /var/lib/artemis-instance/data/tls/server-ca-truststore.p12
     # -- password for the truststore
-    trustStorePassword: securepass
+#    trustStorePassword: securepass
     # -- type of truststore
-    trustStoreType: PKCS12
+#    trustStoreType: PKCS12
 debugger:
   # -- if `true` starts the JVM with arguments to allow remote debugging
   enabled: false
@@ -197,3 +197,10 @@ security:
         # -- elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role
         - CCN.BANKCARD.INFO
         - CCN.STORE.INFO
+
+pycertmanager:
+  # -- if `true` use [pycertmanager](https://github.com/sherwin-williams-co/pycertmanager) to manage the TLS certs and PCKS#12 keystore for the broker. If `false`, do it yourself some other way. TLS certs are required.
+  enabled: true
+  image:
+    repository: docker.artifactory.sherwin.com/sherwin-williams-co/pycertmanager
+    tag: 0.0.3
