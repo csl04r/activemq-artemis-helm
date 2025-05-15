@@ -17,6 +17,9 @@ releases:
    chart: ../charts/artemis
    kubeContext: chad-lb9937
    values:
+     - ingress:
+         enabled: true
+
      - fullnameOverride: artemis
      - appRoleSecrets:
           roleId: {{ exec "op" (list "read" "op://Sherwin/qvgybl6xcm77yc5yl4f2crkxyu/role-id") }}
