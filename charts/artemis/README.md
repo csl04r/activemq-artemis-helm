@@ -36,7 +36,7 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | image.pullSecrets | list | `[]` |  |
 | image.repository | string | `"docker.artifactory.sherwin.com/sherwin-williams-co/activemq-shw-extensions"` | required value to identify the image |
 | image.tag | string | `""` | required value to identify the image |
-| javaArgs | string | `"-XX:AutoBoxCacheMax=20000  -XX:+PrintClassHistogram  -XX:+UseG1GC  -XX:+UseStringDeduplication  -Xms512M  -Xmx512M  -Dhawtio.disableProxy=true  -Dhawtio.realm=activemq  -Dhawtio.offline=true  -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal  -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload  -Djolokia.policyLocation=/var/lib/artemis-instance/etc/jolokia-access.xml  -Dlog4j2.disableJmx=true  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED"` | JVM arguments to include on the artemis server command line |
+| javaArgs | string | `"-XX:AutoBoxCacheMax=20000  -XX:+PrintClassHistogram  -XX:+UseG1GC  -XX:+UseStringDeduplication  -Xms512M  -Xmx512M  -Dhawtio.contextPath=/console  -Dhawtio.proxy.basePath=/console/jolokia  -Dhawtio.disableProxy=true  -Dhawtio.realm=activemq  -Dhawtio.offline=true  -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal  -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload  -Djolokia.policyLocation=file:///var/lib/artemis-instance/etc/jolokia-access.xml  -Dlog4j2.disableJmx=true  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED"` | JVM arguments to include on the artemis server command line |
 | metrics.enabled | bool | `true` | if `true` export prometheus metrics |
 | metrics.serviceMonitor.enabled | bool | `false` | if `true` and metrics.enabled `true` then deploy service monitor |
 | metrics.serviceMonitor.interval | string | `"10s"` | Prometheus scraping interval |
@@ -58,7 +58,7 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | podSecurityContext.runAsUser | int | `1001` | the user id to use when running the container |
 | pycertmanager.enabled | bool | `true` | if `true` use [pycertmanager](https://github.com/sherwin-williams-co/pycertmanager) to manage the TLS certs and PCKS#12 keystore for the broker. If `false`, do it yourself some other way. TLS certs are required. |
 | pycertmanager.image.repository | string | `"docker.artifactory.sherwin.com/sherwin-williams-co/pycertmanager"` |  |
-| pycertmanager.image.tag | string | `"0.0.3"` |  |
+| pycertmanager.image.tag | string | `"0.1.3"` |  |
 | readinessProbe.initialDelaySeconds | int | `5` |  |
 | readinessProbe.periodSeconds | int | `10` |  |
 | readinessProbe.tcpSocket.port | string | `"netty"` |  |
@@ -85,10 +85,10 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | service.loadBalancer.annotations."metallb.universe.tf/allow-shared-ip" | string | `"172.30.0.8"` |  |
 | service.loadBalancer.annotations."metallb.universe.tf/ip-allocated-from-pool" | string | `"default-pool"` |  |
 | tls.enabled | bool | `true` | if `true`, will create a self-signed certificate and require remote connections to use TLS, i.e. by adding `?sslEnabled=true;trustAll=true` to the broker connection URL |
-| tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/data/tls/tls.p12","keyStoreType":"PKCS12","sslEnabled":"true"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
+| tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/tls/tls.p12","keyStoreType":"PKCS12","sslEnabled":"true"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
 | tls.parameters.keyStoreAlias | string | `"server"` | alias in the keystore for the key & cert |
 | tls.parameters.keyStorePassword | string | `"securepass"` | password for the keystore |
-| tls.parameters.keyStorePath | string | `"/var/lib/artemis-instance/data/tls/tls.p12"` | keystore holding key & cert for the broker |
+| tls.parameters.keyStorePath | string | `"/var/lib/artemis-instance/tls/tls.p12"` | keystore holding key & cert for the broker |
 | tls.parameters.keyStoreType | string | `"PKCS12"` | type of keystore |
 | tls.parameters.sslEnabled | string | `"true"` | whether to use SSL/TLS |
 | tolerations | list | `[]` |  |

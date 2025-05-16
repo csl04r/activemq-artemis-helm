@@ -24,12 +24,14 @@ javaArgs: >-
   -XX:+UseStringDeduplication 
   -Xms512M 
   -Xmx512M 
+  -Dhawtio.contextPath=/console 
+  -Dhawtio.proxy.basePath=/console/jolokia 
   -Dhawtio.disableProxy=true 
   -Dhawtio.realm=activemq 
   -Dhawtio.offline=true 
   -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal 
   -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload 
-  -Djolokia.policyLocation=/var/lib/artemis-instance/etc/jolokia-access.xml 
+  -Djolokia.policyLocation=file:///var/lib/artemis-instance/etc/jolokia-access.xml 
   -Dlog4j2.disableJmx=true 
   --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
 
@@ -107,7 +109,7 @@ tls:
     # -- whether to use SSL/TLS
     sslEnabled: "true"
     # -- keystore holding key & cert for the broker
-    keyStorePath: /var/lib/artemis-instance/data/tls/tls.p12
+    keyStorePath: /var/lib/artemis-instance/tls/tls.p12
     # -- password for the keystore
     keyStorePassword: securepass
     # -- type of keystore
@@ -203,4 +205,4 @@ pycertmanager:
   enabled: true
   image:
     repository: docker.artifactory.sherwin.com/sherwin-williams-co/pycertmanager
-    tag: 0.0.3
+    tag: 0.1.3

@@ -68,6 +68,62 @@ app.kubernetes.io/ha: live
 app.kubernetes.io/ha: backup
 {{- end -}}
 
+{{- define "artemis.pycertmanager" -}}
+{{ $daemon := .daemon }}
+{{ $root := .root }}
+{{ $suffix := .suffix }}
+{{ $fullname := include "artemis.fullname" $root }}
+{{ $shwCostCenter := ($root.Values.global).shwCostCenter | default "XXXXXX" }}
+    {{- if ($root.Values.tls).enabled }}
+        {{- with $root.Values.pycertmanager }}
+            {{- if .enabled }}
+- name: pycertmanager-{{$suffix}}
+                {{- with .image }}
+  image: {{ required "pycertmanager.image.repository is required" .repository }}:{{ .tag | default "latest" }}
+                    {{- if .pullPolicy }}
+  imagePullPolicy: {{ $root.Values.image.pullPolicy}}
+                    {{- end }}
+                {{- end }}
+  args:
+    - --vault-role-name=stores-edge
+    - --common-name={{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
+    - --extra-dns-san
+    - localhost,{{$fullname}}-0,{{$fullname}}-0.{{$root.Release.Namespace}},{{$fullname}}.{{$root.Release.Namespace}}.svc.cluster.local,{{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com,{{$fullname}}.{{ $shwCostCenter }}-ingress.stores.sherwin.com
+                {{- with $root.Values.tls.parameters }}
+    - --make-p12
+    - --p12-alias={{ .keyStoreAlias | default "server" }}
+    - --k8s-secret-name={{$fullname}}-tls
+    - --k8s-secret-namespace={{$root.Release.Namespace}}
+                    {{- if $daemon }}
+    - --daemon
+                    {{- end }}
+                {{- end }}
+  envFrom:
+    - secretRef:
+        name: {{$fullname}}-approle
+  env:
+    - name: P12_PASSWORD
+      value: {{ $root.Values.tls.parameters.keyStorePassword }}
+    - name: SHW_COST_CENTER
+      value: {{ $shwCostCenter }}
+    - name: RELEASE_NAME
+      value: {{ $root.Release.Name }}
+    - name: HELM_FULLNAME
+      value: {{$fullname}}
+      # Use downward API to get the namespace & pod name
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+            {{- end }}
+        {{- end }}
+    {{- end }}
+{{- end -}}
+
 {{- define "artemis.statefulset.spec" -}}
 {{ $fullname := include "artemis.fullname" . }}
 {{ $shwCostCenter := (.Values.global).shwCostCenter | default "XXXXXX" }}
@@ -98,84 +154,8 @@ initContainers:
       mountPath: /var/lib/artemis-instance
     - name: overrides
       mountPath: /var/lib/artemis-instance/etc-override
-containers:
-{{- if (.Values.tls).enabled }}
-{{- with .Values.pycertmanager }}
- {{- if .enabled }}
-- name: pycertmanager
-  {{- with .image }}
-  image: {{ required "pycertmanager.image.repository is required" .repository }}:{{ .tag | default "latest" }}
-    {{- if .pullPolicy }}
-  imagePullPolicy: {{ .Values.image.pullPolicy}}
-    {{- end }}
-  {{- end }}
-  workingDir: /var/lib/artemis-instance/data
-  args:
-    - --tls-dir
-    - ./tls
-    - --vault-role-name
-    - stores-edge
-    - --common-name
-    - {{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
-    - --extra-dns-san
-    - localhost,{{$fullname}}-0,{{$fullname}}-0.{{$.Release.Namespace}},{{$fullname}}.{{$.Release.Namespace}}.svc.cluster.local,{{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
-    {{- with $.Values.tls.parameters }}
-    - --make-p12
-    - --p12-alias
-    - {{ .keyStoreAlias | default "server" }}
-    - --p12-file-name
-    - tls.p12
-    {{- end }}
-  envFrom:
-    - secretRef:
-        name: {{$fullname}}-approle
-  env:
-    - name: P12_PASSWORD
-      value: {{ $.Values.tls.parameters.keyStorePassword }}
-    - name: SHW_COST_CENTER
-      value: {{ $shwCostCenter }}
-    - name: RELEASE_NAME
-      value: {{ $.Release.Name }}
-    - name: HELM_FULLNAME
-      value: {{$fullname}}
-      # Use downward API to get the namespace & pod name
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-  volumeMounts:
-    - name: data
-      mountPath: /var/lib/artemis-instance/data
-  readinessProbe:
-    exec:
-      command:
-        - ls
-        - -l
-        - {{ $.Values.tls.parameters.keyStorePath }}
-    initialDelaySeconds: 10
-    periodSeconds: 10
-    timeoutSeconds: 2
-    successThreshold: 1
-    failureThreshold: 3
-  livenessProbe:
-    exec:
-      command:
-        - ls
-        - -l
-        - {{ $.Values.tls.parameters.keyStorePath }}
-    initialDelaySeconds: 10
-    periodSeconds: 20
-    timeoutSeconds: 2
-    successThreshold: 1
-    failureThreshold: 3
-  {{- end }}
-{{- end }}
-{{- end }}
 
+containers:
 - name: activemq-artemis
   workingDir: /var/lib/artemis-instance
   command:
@@ -228,6 +208,8 @@ containers:
   {{- end }}
     - name: JAVA_ARGS
       value: "{{ .Values.javaArgs }}"
+    - name: ARTEMIS_INSTANCE_ETC_URI
+      value: file:///var/lib/artemis-instance/etc/
     - name: ARTEMIS_USERNAME
       value: {{ (.Values.auth).clientUser | default "artemis" | quote }}
     - name: ARTEMIS_PASSWORD
@@ -245,14 +227,17 @@ containers:
     - name: SHW_COST_CENTER
       value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
   volumeMounts:
-  - name: certs
-    mountPath: /certs
+  - name: tls
+    mountPath: /var/lib/artemis-instance/tls
   - name: instance
     mountPath: /var/lib/artemis-instance
   - name: data
     mountPath: /var/lib/artemis-instance/data
   - name: overrides
     mountPath: /var/lib/artemis-instance/etc-override
+  - name: hawtio
+    mountPath: /opt/activemq-artemis/web/console.war/hawtconfig.json
+    subPath: hawtconfig.json
 serviceAccountName: {{ include "artemis.fullname" . }}
 {{- if .Values.podSecurityContext }}
 securityContext:
@@ -275,12 +260,18 @@ imagePullSecrets:
   {{- toYaml . | nindent 2 }}
 {{- end }}
 volumes:
+- name: hawtio
+  configMap:
+    name: {{ include "artemis.fullname" . }}-hawtio
 - name: scripts
   configMap:
     name: {{ include "artemis.fullname" . }}-scripts
 - name: certs
   configMap:
     name: {{ include "artemis.fullname" . }}-certs
+- name: tls
+  secret:
+    secretName: {{ include "artemis.fullname" . }}-tls
 - name: instance
   emptyDir: {}
 {{- if not .Values.persistence.enabled }}

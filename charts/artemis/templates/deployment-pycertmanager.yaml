@@ -1,0 +1,20 @@
+{{- $fullname := include "artemis.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-pycertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{$fullname}}-pycertmanager
+  template:
+    metadata:
+        labels:
+          app: {{$fullname}}-pycertmanager
+          app.kubernetes.io/name: {{$fullname}}
+          app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        {{- include "artemis.pycertmanager" (dict "root" . "daemon" true "suffix" "sidecar") | nindent 8 }}
+      serviceAccountName: {{ include "artemis.fullname" . }}

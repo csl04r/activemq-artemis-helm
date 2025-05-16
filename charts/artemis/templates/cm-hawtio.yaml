@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "artemis.fullname" . }}-hawtio
+data:
+  hawtconfig.json: |
+    {
+      "context": "/console",
+      "branding": {                  
+        "appName": "Artemis Console",
+        "showAppName": false,            
+        "appLogoUrl": "img/activemq.png",    
+        "companyLogoUrl": "img/activemq.png",
+        "css": "css/activemq.css",  
+        "favicon": "img/favicon.png"
+      },        
+      "login": {                                                  
+        "description": "Login page for ActiveMQ Artemis Console.",
+        "links": [                                                                                            
+          { "url": "https://activemq.apache.org/components/artemis/documentation/", "text": "Documentation" },
+          { "url": "https://activemq.apache.org/", "text": "Website" }
+        ]
+      },        
+      "about": {                                       
+        "title": "ActiveMQ Artemis Management Console",                  
+        "productInfo": [{"name": "ActiveMQ Artemis", "value": "2.41.0"}],
+        "additionalInfo": "",
+        "copyright": " ",           
+        "imgSrc": "img/activemq.png"
+      },                  
+      "disabledRoutes": []
+    }
