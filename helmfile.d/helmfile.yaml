@@ -1,3 +1,6 @@
+repositories:
+  - name: rt
+    url: https://artifactory.sherwin.com/artifactory/helm-local
 releases:
 # - name: secrets
 #
@@ -14,7 +17,9 @@ releases:
  - name: artemis
    namespace: artemis
    createNamespace: true
-   chart: ../charts/artemis
+#   chart: ../charts/artemis
+   chart: rt/activemq-artemis
+   version: 1.7.0
    kubeContext: chad-lb9937
    values:
      - ingress:
@@ -87,6 +92,8 @@ releases:
                ## security.kubernetes.roleAliases.amq[] list of k8s prinicpals to get the `amq` role
                - system:serviceaccount:shw-na-pos:pol # list of k8s principals to receive the role
                - system:serviceaccount:shw-na-pos:shercolor
+             OMS:
+               - system:serviceaccount:artemis:artemis
          oauth2:
            enabled: true
            jaasModule: shw.activemq.extension.security.OAuth2LoginModule
