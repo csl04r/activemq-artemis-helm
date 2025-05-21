@@ -68,62 +68,6 @@ app.kubernetes.io/ha: live
 app.kubernetes.io/ha: backup
 {{- end -}}
 
-{{- define "artemis.pycertmanager" -}}
-{{ $daemon := .daemon }}
-{{ $root := .root }}
-{{ $suffix := .suffix }}
-{{ $fullname := include "artemis.fullname" $root }}
-{{ $shwCostCenter := ($root.Values.global).shwCostCenter | default "XXXXXX" }}
-    {{- if ($root.Values.tls).enabled }}
-        {{- with $root.Values.pycertmanager }}
-            {{- if .enabled }}
-- name: pycertmanager-{{$suffix}}
-                {{- with .image }}
-  image: {{ required "pycertmanager.image.repository is required" .repository }}:{{ .tag | default "latest" }}
-                    {{- if .pullPolicy }}
-  imagePullPolicy: {{ $root.Values.image.pullPolicy}}
-                    {{- end }}
-                {{- end }}
-  args:
-    - --vault-role-name=stores-edge
-    - --common-name={{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
-    - --extra-dns-san
-    - localhost,{{$fullname}}-0,{{$fullname}}-0.{{$root.Release.Namespace}},{{$fullname}}.{{$root.Release.Namespace}}.svc.cluster.local,{{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com,{{$fullname}}.{{ $shwCostCenter }}-ingress.stores.sherwin.com
-                {{- with $root.Values.tls.parameters }}
-    - --make-p12
-    - --p12-alias={{ .keyStoreAlias | default "server" }}
-    - --k8s-secret-name={{$fullname}}-tls
-    - --k8s-secret-namespace={{$root.Release.Namespace}}
-                    {{- if $daemon }}
-    - --daemon
-                    {{- end }}
-                {{- end }}
-  envFrom:
-    - secretRef:
-        name: {{$fullname}}-approle
-  env:
-    - name: P12_PASSWORD
-      value: {{ $root.Values.tls.parameters.keyStorePassword }}
-    - name: SHW_COST_CENTER
-      value: {{ $shwCostCenter }}
-    - name: RELEASE_NAME
-      value: {{ $root.Release.Name }}
-    - name: HELM_FULLNAME
-      value: {{$fullname}}
-      # Use downward API to get the namespace & pod name
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-            {{- end }}
-        {{- end }}
-    {{- end }}
-{{- end -}}
-
 {{- define "artemis.statefulset.spec" -}}
 {{ $fullname := include "artemis.fullname" . }}
 {{ $shwCostCenter := (.Values.global).shwCostCenter | default "XXXXXX" }}

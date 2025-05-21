@@ -1,4 +1,7 @@
-{{- $fullname := include "artemis.fullname" . }}
+{{- $fullname := include "artemis.fullname" . -}}
+{{- $shwCostCenter := ($.Values.global).shwCostCenter | default "XXXXXX" -}}
+{{- with .Values.pycertmanager }}
+  {{- if .enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -13,8 +16,49 @@ spec:
         labels:
           app: {{$fullname}}-pycertmanager
           app.kubernetes.io/name: {{$fullname}}
-          app.kubernetes.io/instance: {{ .Release.Name }}
+          app.kubernetes.io/instance: {{ $.Release.Name }}
     spec:
+      serviceAccountName: {{ $fullname }}
       containers:
-        {{- include "artemis.pycertmanager" (dict "root" . "daemon" true "suffix" "sidecar") | nindent 8 }}
-      serviceAccountName: {{ include "artemis.fullname" . }}
+        - name: pycertmanager
+            {{- with .image }}
+          image: {{ required "pycertmanager.image.repository is required" .repository }}:{{ .tag | default "latest" }}
+                   {{- if .pullPolicy }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+                    {{- end }}
+            {{- end }}
+          args:
+            - --vault-role-name=stores-edge
+            - --common-name={{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
+            - --extra-dns-san
+            - localhost,{{$fullname}}-0,{{$fullname}}-0.{{$.Release.Namespace}},{{$fullname}}.{{$.Release.Namespace}}.svc.cluster.local,{{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com,{{$fullname}}.{{ $shwCostCenter }}-ingress.stores.sherwin.com
+              {{- with $.Values.tls.parameters }}
+            - --make-p12
+            - --p12-alias={{ .keyStoreAlias | default "server" }}
+              {{- end }}
+            - --k8s-secret-name={{$fullname}}-tls
+            - --k8s-secret-namespace={{$.Release.Namespace}}
+            - --daemon
+          envFrom:
+            - secretRef:
+                name: {{$fullname}}-approle
+          env:
+            - name: P12_PASSWORD
+              value: {{ $.Values.tls.parameters.keyStorePassword }}
+            - name: SHW_COST_CENTER
+              value: {{ $shwCostCenter }}
+            - name: RELEASE_NAME
+              value: {{ $.Release.Name }}
+            - name: HELM_FULLNAME
+              value: {{$fullname}}
+              # Use downward API to get the namespace & pod name
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+    {{- end }}
+{{- end }}

@@ -205,4 +205,4 @@ pycertmanager:
   enabled: true
   image:
     repository: docker.artifactory.sherwin.com/sherwin-williams-co/pycertmanager
-    tag: 0.1.3
+    tag: 0.1.4
