@@ -58,7 +58,7 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | podSecurityContext.runAsUser | int | `1001` | the user id to use when running the container |
 | pycertmanager.enabled | bool | `true` | if `true` use [pycertmanager](https://github.com/sherwin-williams-co/pycertmanager) to manage the TLS certs and PCKS#12 keystore for the broker. If `false`, do it yourself some other way. TLS certs are required. |
 | pycertmanager.image.repository | string | `"docker.artifactory.sherwin.com/sherwin-williams-co/pycertmanager"` |  |
-| pycertmanager.image.tag | string | `"0.1.4"` |  |
+| pycertmanager.image.tag | string | `"0.1.5"` |  |
 | readinessProbe.initialDelaySeconds | int | `5` |  |
 | readinessProbe.periodSeconds | int | `10` |  |
 | readinessProbe.tcpSocket.port | string | `"netty"` |  |

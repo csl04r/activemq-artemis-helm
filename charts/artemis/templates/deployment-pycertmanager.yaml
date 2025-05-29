@@ -31,7 +31,13 @@ spec:
             - --vault-role-name=stores-edge
             - --common-name={{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com
             - --extra-dns-san
-            - localhost,{{$fullname}}-0,{{$fullname}}-0.{{$.Release.Namespace}},{{$fullname}}.{{$.Release.Namespace}}.svc.cluster.local,{{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com,{{$fullname}}.{{ $shwCostCenter }}-ingress.stores.sherwin.com
+            - >-
+              localhost,
+              {{$fullname}},
+              {{$fullname}}-0.{{$fullname}},
+              {{$fullname}}-0.{{$fullname}}.{{$.Release.Namespace}},{{$fullname}}.{{$.Release.Namespace}}.svc.cluster.local,
+              {{$fullname}}.{{ $shwCostCenter }}-service.stores.sherwin.com,
+              {{$fullname}}.{{ $shwCostCenter }}-ingress.stores.sherwin.com
               {{- with $.Values.tls.parameters }}
             - --make-p12
             - --p12-alias={{ .keyStoreAlias | default "server" }}
