@@ -66,20 +66,14 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | resources.limits.memory | string | `"794Mi"` |  |
 | resources.requests.cpu | string | `"100m"` |  |
 | resources.requests.memory | string | `"794Mi"` |  |
-| security.kubernetes | object | `{"clients":[{"fullyQualifiedServiceAccountName":"system:serviceaccount:our-namespace:our-app","name":"OURAPP"}],"enabled":true,"roleAliases":{"some-amq-role":["system:serviceaccount:shw-na-pos:pol","system:serviceaccount:shw-na-pos:shercolor"]}}` | security configuration for clients running in the same Kubernetes cluster |
-| security.kubernetes.clients[0] | object | `{"fullyQualifiedServiceAccountName":"system:serviceaccount:our-namespace:our-app","name":"OURAPP"}` | moniker for a known application that will connect from the same k8s cluster, used to create an AMQ role and destination prefix |
-| security.kubernetes.clients[0].fullyQualifiedServiceAccountName | string | `"system:serviceaccount:our-namespace:our-app"` | the fully qualified service account name to acquire this AMQ role |
+| security.kubernetes | object | `{"clients":[],"enabled":true,"roleAliases":{}}` | security configuration for clients running in the same Kubernetes cluster |
 | security.kubernetes.enabled | bool | `true` | if `true` allow kubernetes service account token authentication and authorization |
-| security.kubernetes.roleAliases | object | `{"some-amq-role":["system:serviceaccount:shw-na-pos:pol","system:serviceaccount:shw-na-pos:shercolor"]}` | maps ActiveMQ roles to a list of k8s principals |
-| security.kubernetes.roleAliases.some-amq-role | list | `["system:serviceaccount:shw-na-pos:pol","system:serviceaccount:shw-na-pos:shercolor"]` | name of the ActiveMQ role to assign |
-| security.kubernetes.roleAliases.some-amq-role[0] | string | `"system:serviceaccount:shw-na-pos:pol"` | list of k8s prinicpals to get the above ActiveMQ role |
+| security.kubernetes.roleAliases | object | `{}` | maps ActiveMQ roles to a list of k8s principals |
 | security.oauth2.audience | string | `"8bddbe55-946d-4033-8832-a1e752e97709"` | audience in JWT which identifies this group of ActiveMQ services |
 | security.oauth2.enabled | bool | `true` | if `true` use OAuth2 JWT token authentication and authorization |
 | security.oauth2.issuerUrl | string | `"https://login.microsoftonline.com/44b79a67-d972-49ba-9167-8eb05f754a1a/v2.0"` | URL of the OAuth2 issuer |
 | security.oauth2.jaasModule | string | `"shw.activemq.extension.security.OAuth2LoginModule"` | LoginModule implementation class |
-| security.oauth2.roleAliases | object | `{"some-amq-role":["CCN.BANKCARD.INFO","CCN.STORE.INFO"]}` | maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role. |
-| security.oauth2.roleAliases.some-amq-role | list | `["CCN.BANKCARD.INFO","CCN.STORE.INFO"]` | the ActiveMQ role to assign to the subject presenting the JWT |
-| security.oauth2.roleAliases.some-amq-role[0] | string | `"CCN.BANKCARD.INFO"` | elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role |
+| security.oauth2.roleAliases | object | `{}` | maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role. |
 | security.oauth2.rolesClaimName | string | `"roles"` | name of claim in the JWT containing strings to alias to an ActiveMQ role |
 | security.oauth2.tenantId | string | `"44b79a67-d972-49ba-9167-8eb05f754a1a"` | In Microsoft Entra, the tenant ID in use |
 | service.loadBalancer.annotations."metallb.universe.tf/allow-shared-ip" | string | `"172.30.0.8"` |  |

@@ -167,18 +167,21 @@ security:
   kubernetes:
     # -- if `true` allow kubernetes service account token authentication and authorization
     enabled: true
-    clients:
-      # -- moniker for a known application that will connect from the same k8s cluster, used to create an AMQ role and destination prefix
-      - name: OURAPP
-        # -- the fully qualified service account name to acquire this AMQ role
-        fullyQualifiedServiceAccountName: system:serviceaccount:our-namespace:our-app
+    clients: []
+#      # -- moniker for a known application that will connect from the same k8s cluster, used to create an AMQ role and destination prefix
+#      - name: OURAPP
+#        # -- the fully qualified service account name to acquire this AMQ role
+#        fullyQualifiedServiceAccountName: system:serviceaccount:our-namespace:our-app
     # -- maps ActiveMQ roles to a list of k8s principals
-    roleAliases:
+    roleAliases: {}
       # -- name of the ActiveMQ role to assign
-      some-amq-role: # the activemq role to assign
-        # -- list of k8s prinicpals to get the above ActiveMQ role
-        - system:serviceaccount:shw-na-pos:pol
-        - system:serviceaccount:shw-na-pos:shercolor
+#      amq: # Super-user role in Artemis
+#        - system:serviceaccount:shw-na-pos:kafka-router
+#      # -- name of the ActiveMQ role to assign
+#      some-amq-role: # the activemq role to assign
+#        # -- list of k8s prinicpals to get the above ActiveMQ role
+#        - system:serviceaccount:shw-na-pos:pol
+#        - system:serviceaccount:shw-na-pos:shercolor
   oauth2:
     # -- if `true` use OAuth2 JWT token authentication and authorization
     enabled: true
@@ -193,12 +196,12 @@ security:
     # -- name of claim in the JWT containing strings to alias to an ActiveMQ role
     rolesClaimName: roles
     # -- maps JWT roles to ActiveMQ roles. The ActiveMQ roles are the keys which take a list of JWT roles to which to grant the ActiveMQ role.
-    roleAliases:
-      # -- the ActiveMQ role to assign to the subject presenting the JWT
-      some-amq-role:
-        # -- elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role
-        - CCN.BANKCARD.INFO
-        - CCN.STORE.INFO
+    roleAliases: {}
+#      # -- the ActiveMQ role to assign to the subject presenting the JWT
+#      some-amq-role:
+#        # -- elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role
+#        - CCN.BANKCARD.INFO
+#        - CCN.STORE.INFO
 
 pycertmanager:
   # -- if `true` use [pycertmanager](https://github.com/sherwin-williams-co/pycertmanager) to manage the TLS certs and PCKS#12 keystore for the broker. If `false`, do it yourself some other way. TLS certs are required.

@@ -19,7 +19,7 @@ releases:
    createNamespace: true
    chart: ../charts/artemis
 #   chart: rt/activemq-artemis
-#   version: 1.7.0
+#   version: 1.8.0
    kubeContext: chad-lb9937
    values:
      - ingress:
@@ -75,25 +75,11 @@ releases:
        - name: SherColor.TintOrder
      - security:
          kubernetes:
-           ## security.kubernetes.enabled if `true` use kubernetes service account token authentication and authorization
            enabled: true
-           clients:
-             ## security.kubernetes.clients[].name name of a known applications that will connect from the K8s cluster, used to create an AMQ role and destination prefix
-             - name: shercolor
-               ## security.kubernetes.clients[].fullyQualifiedServiceAccountName the fully qualified service account name to acquire this AMQ role
-               fullyQualifiedServiceAccountName: system:serviceaccount:shw-na-pos:shercolor
-             - name: pol
-               fullyQualifiedServiceAccountName: system:serviceaccount:shw-na-pos:pol
-             - name: CHAD
-               fullyQualifiedServiceAccountName: system:serviceaccount:default:chad-amq-client
-           ## security.kubernetes.roleAliases maps ActiveMQ roles to a list of k8s principals
            roleAliases:
-             amq: # the activemq role to assign
-               ## security.kubernetes.roleAliases.amq[] list of k8s prinicpals to get the `amq` role
-               - system:serviceaccount:shw-na-pos:pol # list of k8s principals to receive the role
+             amq:
+               - system:serviceaccount:shw-na-pos:kafka-router # list of k8s principals to receive the role
                - system:serviceaccount:shw-na-pos:shercolor
-             OMS:
-               - system:serviceaccount:artemis:artemis
          oauth2:
            enabled: true
            jaasModule: shw.activemq.extension.security.OAuth2LoginModule
