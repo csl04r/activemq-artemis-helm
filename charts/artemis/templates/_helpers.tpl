@@ -510,8 +510,11 @@ under the License.
          <address-setting match="#">
             <dead-letter-address>DLQ</dead-letter-address>
             <expiry-address>ExpiryQueue</expiry-address>
-            <redelivery-delay>0</redelivery-delay>
-
+            <redelivery-delay>500</redelivery-delay>
+            <redelivery-delay-multiplier>2.0</redelivery-delay-multiplier>
+            <max-redelivery-delay>300000</max-redelivery-delay>
+            <!-- infinite redelivery -->
+            <max-delivery-attempts>-1</max-delivery-attempts>
             <message-counter-history-day-limit>10</message-counter-history-day-limit>
             <address-full-policy>PAGE</address-full-policy>
             <auto-create-queues>true</auto-create-queues>
