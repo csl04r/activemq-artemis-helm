@@ -20,8 +20,8 @@ fi
 
 for f in ./etc-override/*
 do
-  if [ -f $f ]; then
+  if [ -f "$f" ]; then
     echo "Copying $f to ./etc/"
-    cp --dereference --preserve --verbose --recursive $f ./etc/
+    cp --dereference --preserve --verbose --recursive --force "$f" ./etc/
   fi
 done
