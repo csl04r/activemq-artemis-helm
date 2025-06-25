@@ -46,12 +46,20 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "artemis.labels" -}}
-app.kubernetes.io/name: {{ include "artemis.name" . }}
-helm.sh/chart: {{ .Chart.Name }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{ include "artemis.selectorLabels" . }}
+helm.sh/chart: {{ include "artemis.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+{{- end -}}
+
+
+{{/*
+Selector labels
+*/}}
+{{- define "artemis.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "artemis.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 

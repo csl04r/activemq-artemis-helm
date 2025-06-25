@@ -1,0 +1,68 @@
+{{- $fullname := include "artemis.fullname" . -}}
+{{- $chartVersion := .Chart.Version -}}
+{{- $fixedAfter := "1.10.1" -}}
+{{- if and (eq $chartVersion $fixedAfter) (not (hasKey .Values "skipDeleteSts")) }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{$fullname}}-hook-sa
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{$fullname}}-hook-role
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["statefulsets"]
+    verbs: ["get", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{$fullname}}-hook-rolebinding
+  namespace: {{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{$fullname}}-hook-sa
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{$fullname}}-hook-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: conditional-delete-statefulset
+  annotations:
+    "argocd.argoproj.io/hook": PreSync
+    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+spec:
+  template:
+    spec:
+      serviceAccountName: {{$fullname}}-hook-sa
+      containers:
+        - name: check-and-delete
+          image: bitnami/kubectl:latest
+          command:
+            - /usr/bin/bash
+            - -c
+            - |
+              set -e
+              version=$(kubectl get statefulset {{ $fullname }} \
+                -n {{ .Release.Namespace }} \
+                -o jsonpath="{.spec.template.metadata.labels.helm\.sh/chart}" \
+                | awk -F- '{print $NF}'\
+              )
+              echo "Currently installed chart version: $version"
+              if [ "$(printf '%s\n' "$version" {{$fixedAfter | quote }} | sort -V | head -n1)" != {{$fixedAfter | quote }} ]; then
+                echo "Existing Artemis Chart version $version is less than {{$fixedAfter}}, deleting StatefulSet..."
+                kubectl delete statefulset {{$fullname}} -n {{ .Release.Namespace }}
+              else
+                echo "Version is 1.10.1 or higher, skipping delete."
+              fi
+      restartPolicy: Never
+  {{- end }}
