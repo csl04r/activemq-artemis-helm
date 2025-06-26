@@ -1,6 +1,6 @@
 {{- $fullname := include "artemis.fullname" . -}}
 {{- $chartVersion := .Chart.Version -}}
-{{- $fixedAfter := "1.10.1" -}}
+{{- $fixedAfter := "1.11.0" -}}
 {{- if and (eq $chartVersion $fixedAfter) (not (hasKey .Values "skipDeleteSts")) }}
 ---
 apiVersion: v1
@@ -9,7 +9,7 @@ metadata:
   name: {{$fullname}}-hook-sa
   namespace: {{ .Release.Namespace }}
   annotations:
-    "argocd.argoproj.io/hook": PreSync
+    helm.sh/hook: pre-install,pre-upgrade
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -17,7 +17,7 @@ metadata:
   name: {{$fullname}}-hook-role
   namespace: {{ .Release.Namespace }}
   annotations:
-    "argocd.argoproj.io/hook": PreSync
+    helm.sh/hook: pre-install,pre-upgrade
 rules:
   - apiGroups: ["apps"]
     resources: ["statefulsets"]
@@ -29,7 +29,7 @@ metadata:
   name: {{$fullname}}-hook-rolebinding
   namespace: {{ .Release.Namespace }}
   annotations:
-    "argocd.argoproj.io/hook": PreSync
+    helm.sh/hook: pre-install,pre-upgrade
 subjects:
   - kind: ServiceAccount
     name: {{$fullname}}-hook-sa
@@ -42,10 +42,10 @@ roleRef:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: conditional-delete-statefulset
+  name: maybe-delete-{{$fullname}}-sts
   annotations:
-    "argocd.argoproj.io/hook": PreSync
-    "argocd.argoproj.io/hook-delete-policy": HookSucceeded
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/resource-policy: keep
 spec:
   template:
     spec:
@@ -65,10 +65,16 @@ spec:
               )
               echo "Currently installed chart version: $version"
               if [ "$(printf '%s\n' "$version" {{$fixedAfter | quote }} | sort -V | head -n1)" != {{$fixedAfter | quote }} ]; then
-                echo "Existing Artemis Chart version $version is less than {{$fixedAfter}}, deleting StatefulSet..."
-                kubectl delete statefulset {{$fullname}} -n {{ .Release.Namespace }}
+                echo "Existing Artemis Chart StatefulSets less than {{$fixedAfter}} have a problem that prevents Helm upgrades"
+                echo "We will now delete it, and this chart will recreate it momentarily."
+                if kubectl delete statefulset {{$fullname}} -n {{ .Release.Namespace }} 
+                then
+                  echo "StatefulSet {{$fullname}} deleted successfully."
+                else
+                  echo "Failed to delete StatefulSet {{$fullname}}, it may not exist or is already deleted."
+                fi
               else
-                echo "Version is 1.10.1 or higher, skipping delete."
+                echo "Version is {{$fixedAfter}} or higher, skipping delete of existing StatefulSet."
               fi
       restartPolicy: Never
   {{- end }}

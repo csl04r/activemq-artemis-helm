@@ -1,6 +1,6 @@
 # activemq-artemis
 
-![Version: 1.10.1](https://img.shields.io/badge/Version-1.10.1-informational?style=flat-square) ![AppVersion: 2.41.0.1](https://img.shields.io/badge/AppVersion-2.41.0.1-informational?style=flat-square)
+![Version: 1.11.0](https://img.shields.io/badge/Version-1.11.0-informational?style=flat-square) ![AppVersion: 2.41.0.1](https://img.shields.io/badge/AppVersion-2.41.0.1-informational?style=flat-square)
 
 A Helm chart installing Apache ActiveMQ Artemis,
 [forked](https://github.com/sherwin-williams-co/activemq-artemis-helm) from Device Insight GmbH

@@ -4,7 +4,7 @@ name: activemq-artemis
 description: |
   A Helm chart installing Apache ActiveMQ Artemis, 
   [forked](https://github.com/sherwin-williams-co/activemq-artemis-helm) from Device Insight GmbH
-version: 1.10.1
+version: 1.11.0
 icon: https://raw.githubusercontent.com/apache/activemq-artemis/2.9.0/artemis-website/src/main/resources/images/artemis-logo.png
 maintainers:
   - name: Device Insight GmbH
