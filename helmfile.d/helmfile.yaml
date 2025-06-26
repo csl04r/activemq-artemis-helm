@@ -17,9 +17,9 @@ releases:
  - name: artemis
    namespace: artemis
    createNamespace: true
-   chart: ../charts/artemis
-#   chart: rt/activemq-artemis
-#   version: 1.9.1
+#   chart: ../charts/artemis
+   chart: rt/activemq-artemis
+   version: 1.10.1
    kubeContext: chad-lb9937
    values:
      - ingress:
