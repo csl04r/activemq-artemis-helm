@@ -21,9 +21,10 @@ javaArgs: >-
   -XX:AutoBoxCacheMax=20000 
   -XX:+PrintClassHistogram 
   -XX:+UseG1GC 
-  -XX:+UseStringDeduplication 
-  -Xms512M 
-  -Xmx512M 
+  -XX:+UseStringDeduplication  
+  -XX:+UseContainerSupport
+  -XX:MaxRAMPercentage=75.0
+  -XX:InitialRAMPercentage=50.0  
   -Dhawtio.contextPath=/console 
   -Dhawtio.proxy.basePath=/console/jolokia 
   -Dhawtio.disableProxy=true 
@@ -38,10 +39,11 @@ javaArgs: >-
 # Rule of thumb for memory calculation: 1.3 * max_heap + 128Mi
 resources:
   limits:
-    memory: 794Mi # round(1.3 * 512Mi) + 128Mi
+    memory: 1Gi # round(1.3 * 1024Mi) + 128Mi
+    cpu: 1000m
   requests:
     cpu: 100m
-    memory: 794Mi
+    memory: 1Gi
 
 persistence:
   # -- if true, then use persistent storage (recommended for production)
@@ -128,6 +130,18 @@ debugger:
   # -- the port to listen for remote debugging connections
   port: 8000
 
+# -- snippets to include in the broker.xml file based on section. The snippets are rendered as XML and must conform
+#    to the schema of the broker.xml file. Caution must be used to ensure that conflicts do not occur with the default values.
+snippets:
+  # -- extra security settings expressed as XML to include in the <security-settings> section of broker.xml
+  securitySettings: ""
+  # -- extra address settings expressed as XML to include in the <address-settings> section of broker.xml
+  addressSettings: ""
+  # -- extra addresses expressed as XML to include in the <addresses> section of broker.xml
+  addresses: ""
+  # -- extra core configuration expressed as XML to include in the <core> section of broker.xml
+  core: ""
+
 
 # -- allows setting security context for the pod: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
 podSecurityContext:
@@ -202,6 +216,45 @@ security:
 #        # -- elements that, when any are present in the JWT, will qualify the JWT presenter to get the above ActiveMQ role
 #        - CCN.BANKCARD.INFO
 #        - CCN.STORE.INFO
+
+# -- additional broker properties to specify as a broker.properties file
+brokerProperties: ""
+#brokerProperties: |
+#  # Additional properties to fine-tune broker config
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".name=OMS.ORDER.UPDATE.AMQ
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".address=OMS.ORDER.UPDATE.AMQ
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".consumersBeforeDispatch=0
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".delayBeforeDispatch=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".durable=true
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".enabled=true
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".exclusive=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".groupBuckets=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".groupRebalance=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".lastValue=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".maxConsumers=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".name=OMS.ORDER.UPDATE.AMQ
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".nonDestructive=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".ringSize=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".routingType=ANYCAST
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ".routingTypes=ANYCAST
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".name=OMS.ORDER.UPDATE.AMQ.TEST
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".address=OMS.ORDER.UPDATE.AMQ.TEST
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".consumersBeforeDispatch=0
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".delayBeforeDispatch=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".durable=true
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".enabled=true
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".exclusive=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".groupBuckets=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".groupRebalance=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".lastValue=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".maxConsumers=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".name=OMS.ORDER.UPDATE.AMQ.TEST
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".nonDestructive=false
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".ringSize=-1
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".routingType=ANYCAST
+#  addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".routingTypes=ANYCAST
+#  divertConfigurations.debug-order-update.address=OMS.ORDER.UPDATE.AMQ
+#  divertConfigurations.debug-order-update.forwardingAddress=OMS.ORDER.UPDATE.AMQ.TEST
 
 pycertmanager:
   # -- if `true` use [pycertmanager](https://github.com/sherwin-williams-co/pycertmanager) to manage the TLS certs and PCKS#12 keystore for the broker. If `false`, do it yourself some other way. TLS certs are required.

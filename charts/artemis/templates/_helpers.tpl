@@ -117,6 +117,10 @@ containers:
 {{- else }}
   - ./bin/artemis
   - run
+  {{- if .Values.brokerProperties }}
+  - --properties
+  - /var/lib/artemis-instance/etc/broker.properties
+  {{- end }}
 {{- end }}
   image: {{ required "image repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
   imagePullPolicy: {{ .Values.image.pullPolicy}}
@@ -262,6 +266,7 @@ volumeClaimTemplates:
 {{- end -}}
 
 {{- define "artemis.broker.xml" -}}
+{{- $shwCostCenter := (.Values.global).shwCostCenter | default "lb0000" -}}
 <?xml version='1.0'?>
 <configuration xmlns="urn:activemq"
                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -271,8 +276,7 @@ volumeClaimTemplates:
    <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="urn:activemq:core ">
 
-      <name>0.0.0.0</name>
-
+      <name>artemis-{{$shwCostCenter}}</name>
 
       <persistence-enabled>true</persistence-enabled>
 
@@ -431,6 +435,8 @@ volumeClaimTemplates:
          <acceptor name="mqtt">tcp://0.0.0.0:1883?tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=MQTT;useEpoll=true{{- include "tls.params" . -}}
         </acceptor>
 
+        {{ (.Values.snippets).acceptors | default "" | indent 8 }}
+
       </acceptors>
 
 
@@ -480,6 +486,7 @@ volumeClaimTemplates:
          {{- end }}
          {{- end }}
          {{- end }}
+        {{ (.Values.snippets).securitySettings | default "" | indent 8 }}
       </security-settings>
 
       <address-settings>
@@ -529,6 +536,7 @@ volumeClaimTemplates:
             <page-limit-bytes>-1</page-limit-bytes>
             <page-limit-messages>-1</page-limit-messages>
           </address-setting>
+        {{ (.Values.snippets).addressSettings | default "" | indent 8 }}
       </address-settings>
 
       <addresses>
@@ -542,6 +550,7 @@ volumeClaimTemplates:
                <queue name="ExpiryQueue" />
             </anycast>
          </address>
+        {{ (.Values.snippets).addresses | default "" | indent 8 }}
       </addresses>
 
       <!-- Uncomment the following if you want to use the Standard LoggingActiveMQServerPlugin pluging to log in events
@@ -557,7 +566,7 @@ volumeClaimTemplates:
          </broker-plugin>
       </broker-plugins>
       -->
-
+      {{ (.Values.snippets).core | default "" | indent 6 }}
    </core>
 </configuration>
 {{- end -}}

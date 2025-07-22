@@ -22,6 +22,62 @@ releases:
 #   version: 1.10.1
    kubeContext: chad-lb9937
    values:
+#     - brokerProperties: |
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".name=OMS.ORDER.UPDATE.AMQ
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".address=OMS.ORDER.UPDATE.AMQ
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".consumersBeforeDispatch=0
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".delayBeforeDispatch=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".durable=true
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".enabled=true
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".exclusive=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".groupBuckets=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".groupRebalance=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".lastValue=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".maxConsumers=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".name=OMS.ORDER.UPDATE.AMQ
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".nonDestructive=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".ringSize=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".queueConfigurations."OMS.ORDER.UPDATE.AMQ".routingType=ANYCAST
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ".routingTypes=ANYCAST
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".name=OMS.ORDER.UPDATE.AMQ.TEST
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".address=OMS.ORDER.UPDATE.AMQ.TEST
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".consumersBeforeDispatch=0
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".delayBeforeDispatch=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".durable=true
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".enabled=true
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".exclusive=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".groupBuckets=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".groupRebalance=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".lastValue=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".maxConsumers=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".name=OMS.ORDER.UPDATE.AMQ.TEST
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".nonDestructive=false
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".ringSize=-1
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".queueConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".routingType=ANYCAST
+#         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".routingTypes=ANYCAST
+#         divertConfigurations.debug-order-update.address=OMS.ORDER.UPDATE.AMQ
+#         divertConfigurations.debug-order-update.forwardingAddress=OMS.ORDER.UPDATE.AMQ.TEST
+     - snippets:
+         addresses: |
+           <address name="OMS.ORDER.UPDATE.AMQ.TEST">
+             <anycast>
+               <queue name="OMS.ORDER.UPDATE.AMQ.TEST" />
+             </anycast>
+           </address>
+           <address name="OMS.ORDER.UPDATE.AMQ">
+             <anycast>
+               <queue name="OMS.ORDER.UPDATE.AMQ" />
+             </anycast>
+           </address>
+         core: |
+           <diverts>
+             <divert name="debug-order-update">
+               <address>OMS.ORDER.UPDATE.AMQ</address>
+               <forwarding-address>OMS.ORDER.UPDATE.AMQ.TEST</forwarding-address>
+               <exclusive>false</exclusive>
+             </divert>
+           </diverts>
+
      - ingress:
          enabled: true
          tls:

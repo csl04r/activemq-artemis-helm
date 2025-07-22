@@ -27,6 +27,7 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | appRoleSecrets | object | `{"roleId":"","secretId":""}` | secret values for AppRole authentication to HashiCorp vault. These are used to sign a CSR and get a valid cert for the broker. |
 | appRoleSecrets.roleId | string | `""` | the role ID for the AppRole |
 | appRoleSecrets.secretId | string | `""` | the secret ID for the AppRole |
+| brokerProperties | string | `""` | additional broker properties to specify as a broker.properties file |
 | core | object | `{"criticalAnalyzerPolicy":"SHUTDOWN"}` | additional core settings. Key, values are automatically expanded |
 | core.criticalAnalyzerPolicy | string | `"SHUTDOWN"` | how to behave on critical errors detected, see https://activemq.apache.org/components/artemis/documentation/latest/critical-analysis.html |
 | debugger | object | `{"enabled":false,"port":8000}` | type of truststore    trustStoreType: PKCS12 |
@@ -36,7 +37,7 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | image.pullSecrets | list | `[]` |  |
 | image.repository | string | `"docker.artifactory.sherwin.com/sherwin-williams-co/activemq-shw-extensions"` | required value to identify the image |
 | image.tag | string | `""` | required value to identify the image |
-| javaArgs | string | `"-XX:AutoBoxCacheMax=20000  -XX:+PrintClassHistogram  -XX:+UseG1GC  -XX:+UseStringDeduplication  -Xms512M  -Xmx512M  -Dhawtio.contextPath=/console  -Dhawtio.proxy.basePath=/console/jolokia  -Dhawtio.disableProxy=true  -Dhawtio.realm=activemq  -Dhawtio.offline=true  -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal  -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload  -Djolokia.policyLocation=file:///var/lib/artemis-instance/etc/jolokia-access.xml  -Dlog4j2.disableJmx=true  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED"` | JVM arguments to include on the artemis server command line |
+| javaArgs | string | `"-XX:AutoBoxCacheMax=20000  -XX:+PrintClassHistogram  -XX:+UseG1GC  -XX:+UseStringDeduplication   -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0   -Dhawtio.contextPath=/console  -Dhawtio.proxy.basePath=/console/jolokia  -Dhawtio.disableProxy=true  -Dhawtio.realm=activemq  -Dhawtio.offline=true  -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal  -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload  -Djolokia.policyLocation=file:///var/lib/artemis-instance/etc/jolokia-access.xml  -Dlog4j2.disableJmx=true  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED"` | JVM arguments to include on the artemis server command line |
 | metrics.enabled | bool | `true` | if `true` export prometheus metrics |
 | metrics.serviceMonitor.enabled | bool | `false` | if `true` and metrics.enabled `true` then deploy service monitor |
 | metrics.serviceMonitor.interval | string | `"10s"` | Prometheus scraping interval |
@@ -63,9 +64,10 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | readinessProbe.periodSeconds | int | `10` |  |
 | readinessProbe.tcpSocket.port | string | `"netty"` |  |
 | replicaCount | int | `1` | number of replicas in the stateful set. Do not set value greater than 1 unless you have a good reason |
-| resources.limits.memory | string | `"794Mi"` |  |
+| resources.limits.cpu | string | `"1000m"` |  |
+| resources.limits.memory | string | `"1Gi"` |  |
 | resources.requests.cpu | string | `"100m"` |  |
-| resources.requests.memory | string | `"794Mi"` |  |
+| resources.requests.memory | string | `"1Gi"` |  |
 | security.kubernetes | object | `{"clients":[],"enabled":true,"roleAliases":{}}` | security configuration for clients running in the same Kubernetes cluster |
 | security.kubernetes.enabled | bool | `true` | if `true` allow kubernetes service account token authentication and authorization |
 | security.kubernetes.roleAliases | object | `{}` | maps ActiveMQ roles to a list of k8s principals |
@@ -78,6 +80,11 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | security.oauth2.tenantId | string | `"44b79a67-d972-49ba-9167-8eb05f754a1a"` | In Microsoft Entra, the tenant ID in use |
 | service.loadBalancer.annotations."metallb.universe.tf/allow-shared-ip" | string | `"172.30.0.8"` |  |
 | service.loadBalancer.annotations."metallb.universe.tf/ip-allocated-from-pool" | string | `"default-pool"` |  |
+| snippets | object | `{"addressSettings":"","addresses":"","core":"","securitySettings":""}` | snippets to include in the broker.xml file based on section. The snippets are rendered as XML and must conform    to the schema of the broker.xml file. Caution must be used to ensure that conflicts do not occur with the default values. |
+| snippets.addressSettings | string | `""` | extra address settings expressed as XML to include in the <address-settings> section of broker.xml |
+| snippets.addresses | string | `""` | extra addresses expressed as XML to include in the <addresses> section of broker.xml |
+| snippets.core | string | `""` | extra core configuration expressed as XML to include in the <core> section of broker.xml |
+| snippets.securitySettings | string | `""` | extra security settings expressed as XML to include in the <security-settings> section of broker.xml |
 | tls.enabled | bool | `true` | if `true`, will create a self-signed certificate and require remote connections to use TLS, i.e. by adding `?sslEnabled=true;trustAll=true` to the broker connection URL |
 | tls.parameters | object | `{"keyStoreAlias":"server","keyStorePassword":"securepass","keyStorePath":"/var/lib/artemis-instance/tls/tls.p12","keyStoreType":"PKCS12","sslEnabled":"true"}` | a map of name-value pairs to be converted into the form n1=v1;n2=v2 and appended to broker acceptor connection URLs |
 | tls.parameters.keyStoreAlias | string | `"server"` | alias in the keystore for the key & cert |
