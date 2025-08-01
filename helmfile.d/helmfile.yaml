@@ -17,9 +17,9 @@ releases:
  - name: artemis
    namespace: artemis
    createNamespace: true
-   chart: ../charts/artemis
-#   chart: rt/activemq-artemis
-#   version: 1.10.1
+#   chart: ../charts/artemis
+   chart: rt/activemq-artemis
+   version: 1.11.2
    kubeContext: chad-lb9937
    values:
 #     - brokerProperties: |
@@ -57,23 +57,43 @@ releases:
 #         addressConfigurations."OMS.ORDER.UPDATE.AMQ.TEST".routingTypes=ANYCAST
 #         divertConfigurations.debug-order-update.address=OMS.ORDER.UPDATE.AMQ
 #         divertConfigurations.debug-order-update.forwardingAddress=OMS.ORDER.UPDATE.AMQ.TEST
+     - addresses:
+         - name: OMS.ORDER.UPDATE.AMQ
+         - name: OMS.ORDER.UPDATE.AMQ.TEST
+         - name: OMS.ORDER.RELEASE.AMQ
+         - name: OMS.ORDER.RELEASE.AMQ.TEST
      - snippets:
          addresses: |
-           <address name="OMS.ORDER.UPDATE.AMQ.TEST">
-             <anycast>
-               <queue name="OMS.ORDER.UPDATE.AMQ.TEST" />
-             </anycast>
-           </address>
+           <address name="OMS.ORDER.RELEASE.AMQ">
+            <anycast> 
+              <queue name="OMS.ORDER.RELEASE.AMQ" />
+            </anycast>
+           </address>     
+           <address name="OMS.ORDER.RELEASE.AMQ.TEST">
+            <anycast> 
+              <queue name="OMS.ORDER.RELEASE.AMQ.TEST" />
+            </anycast>
+           </address>     
            <address name="OMS.ORDER.UPDATE.AMQ">
-             <anycast>
-               <queue name="OMS.ORDER.UPDATE.AMQ" />
-             </anycast>
+            <anycast> 
+              <queue name="OMS.ORDER.UPDATE.AMQ" />
+            </anycast>
+           </address>     
+           <address name="OMS.ORDER.UPDATE.AMQ.TEST">
+            <anycast> 
+              <queue name="OMS.ORDER.UPDATE.AMQ.TEST" />
+            </anycast>
            </address>
          core: |
            <diverts>
              <divert name="debug-order-update">
                <address>OMS.ORDER.UPDATE.AMQ</address>
                <forwarding-address>OMS.ORDER.UPDATE.AMQ.TEST</forwarding-address>
+               <exclusive>false</exclusive>
+             </divert>
+             <divert name="debug-order-release">
+               <address>OMS.ORDER.RELEASE.AMQ</address>
+               <forwarding-address>OMS.ORDER.RELEASE.AMQ.TEST</forwarding-address>
                <exclusive>false</exclusive>
              </divert>
            </diverts>
