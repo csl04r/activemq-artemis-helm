@@ -50,13 +50,13 @@ spec:
                 name: {{$fullname}}-approle
           env:
             - name: P12_PASSWORD
-              value: {{ $.Values.tls.parameters.keyStorePassword }}
+              value: {{ $.Values.tls.parameters.keyStorePassword | quote }}
             - name: SHW_COST_CENTER
-              value: {{ $shwCostCenter }}
+              value: {{ $shwCostCenter | quote }}
             - name: RELEASE_NAME
-              value: {{ $.Release.Name }}
+              value: {{ $.Release.Name | quote}}
             - name: HELM_FULLNAME
-              value: {{$fullname}}
+              value: {{ $fullname | quote }}
               # Use downward API to get the namespace & pod name
             - name: POD_NAME
               valueFrom:

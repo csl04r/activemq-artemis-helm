@@ -90,7 +90,7 @@ initContainers:
     - /tmp/scripts/setup-broker.sh
   env:
     - name: SHW_COST_CENTER
-      value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
+      value: {{ (.Values.global).shwCostCenter | default "XXXXXX" | quote }}
     - name: ARTEMIS_PASSWORD
       valueFrom:
         secretKeyRef:
@@ -181,7 +181,7 @@ containers:
     - name: ENABLE_JMX_EXPORTER
       value: {{ .Values.metrics.enabled | quote }}
     - name: SHW_COST_CENTER
-      value: {{ (.Values.global).shwCostCenter | default "XXXXXX"}}
+      value: {{ (.Values.global).shwCostCenter | default "XXXXXX" | quote }}
   volumeMounts:
   - name: tls
     mountPath: /var/lib/artemis-instance/tls
