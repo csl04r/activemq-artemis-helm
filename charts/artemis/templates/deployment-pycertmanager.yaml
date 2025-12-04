@@ -1,5 +1,5 @@
-{{- $fullname := include "artemis.fullname" . -}}
-{{- $shwCostCenter := ($.Values.global).shwCostCenter | default "XXXXXX" -}}
+{{- $fullname := include "artemis.fullname" . }}
+{{- $shwCostCenter := ($.Values.global).shwCostCenter | default "XXXXXX" }}
 {{- with .Values.pycertmanager }}
   {{- if .enabled }}
 apiVersion: apps/v1
