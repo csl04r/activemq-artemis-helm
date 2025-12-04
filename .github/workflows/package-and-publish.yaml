@@ -6,7 +6,7 @@ name: Build and Publish
 
 jobs:
   build_helm:
-    runs-on: sw-ubuntu-latest
+    runs-on: sw-gh-ubuntu-latest
     name: Builds Helm chart and uploads to Artifactory
     steps:
       - name: Get release version string
@@ -29,12 +29,3 @@ jobs:
           helm package ./charts/artemis --version $CHART_VERSION
           curl -f -u "$ARTIF_USERNAME:$ARTIF_API_KEY" -T "${ARTIF_FILE}" "${ARTIF_DIR}${ARTIF_FILE}"
         shell: bash
-#      - name: Publish to Artifactory
-#        env:
-#          ARTIF_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-#          ARTIF_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
-#          ARTIF_FILE: activemq-artemis-${{ steps.version_str.outputs.ref_version }}.tgz
-#          ARTIF_DIR: https://artifactory.sherwin.com/artifactory/helm-local/activemq-artemis/
-#        run: |
-#          curl -f -u $ARTIF_USERNAME:$ARTIF_API_KEY -T "${{ steps.build_helm.outputs.pkg_abs_path }}" $ARTIF_DIR$ARTIF_FILE
-#        shell: bash

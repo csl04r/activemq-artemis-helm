@@ -1,6 +1,6 @@
 # activemq-artemis
 
-![Version: 1.11.1](https://img.shields.io/badge/Version-1.11.1-informational?style=flat-square) ![AppVersion: 2.41.0.3](https://img.shields.io/badge/AppVersion-2.41.0.3-informational?style=flat-square)
+![Version: 1.11.1](https://img.shields.io/badge/Version-1.11.1-informational?style=flat-square) ![AppVersion: 2.44.0.3](https://img.shields.io/badge/AppVersion-2.44.0.3-informational?style=flat-square)
 
 A Helm chart installing Apache ActiveMQ Artemis,
 [forked](https://github.com/sherwin-williams-co/activemq-artemis-helm) from Device Insight GmbH
@@ -38,6 +38,9 @@ A Helm chart installing Apache ActiveMQ Artemis,
 | image.repository | string | `"docker.artifactory.sherwin.com/sherwin-williams-co/activemq-shw-extensions"` | required value to identify the image |
 | image.tag | string | `""` | required value to identify the image |
 | javaArgs | string | `"-XX:AutoBoxCacheMax=20000  -XX:+PrintClassHistogram  -XX:+UseG1GC  -XX:+UseStringDeduplication   -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0   -Dhawtio.contextPath=/console  -Dhawtio.proxy.basePath=/console/jolokia  -Dhawtio.disableProxy=true  -Dhawtio.realm=activemq  -Dhawtio.offline=true  -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal  -Dhawtio.http.strictTransportSecurity=max-age=31536000;includeSubDomains;preload  -Djolokia.policyLocation=file:///var/lib/artemis-instance/etc/jolokia-access.xml  -Dlog4j2.disableJmx=true  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED"` | JVM arguments to include on the artemis server command line |
+| livenessProbe.exec.command[0] | string | `"artemis_healthcheck"` |  |
+| livenessProbe.initialDelaySeconds | int | `30` |  |
+| livenessProbe.periodSeconds | int | `20` |  |
 | metrics.enabled | bool | `true` | if `true` export prometheus metrics |
 | metrics.serviceMonitor.enabled | bool | `false` | if `true` and metrics.enabled `true` then deploy service monitor |
 | metrics.serviceMonitor.interval | string | `"10s"` | Prometheus scraping interval |
